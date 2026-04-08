@@ -1,0 +1,56 @@
+{
+  "app": {
+    "signingConfigs": [
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B275C620B131E8AFA8713FA5EB58B32EEDBA9C42E96447C15B08963883C33EAD6864B8B17FA83E4",
+          "profile": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.p12",
+          "storePassword": "0000001B7A364C07DB5D9BB8E2B2A71E3B6AD1FC8E754744EC60DB5594EF36AC2973AE68A482FB09FBB5F7"
+        }
+      }
+    ],
+    "products": [
+      {
+        "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.0.2(22)",
+        "compatibleSdkVersion": "6.0.2(22)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry",
+      "targets": [
+        {
+          "name": "default",
+          "applyToProducts": [
+            "default"
+          ]
+        }
+      ]
+    }
+  ]
+}

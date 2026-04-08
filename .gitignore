@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local media assets (too large for git, keep out of the monorepo)
+*.mp4

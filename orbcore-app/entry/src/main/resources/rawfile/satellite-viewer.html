@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Orb Core · Satellite</title>
+    <style>
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: #000005; overflow: hidden;
+        font-family: -apple-system, sans-serif; color: #94a3b8;
+      }
+      #app { position: fixed; inset: 0; }
+      #hud {
+        position: fixed; inset: 10px; pointer-events: none;
+        font-size: 9px; letter-spacing: 2px; color: #0891b2;
+        display: flex; flex-direction: column; justify-content: space-between;
+      }
+      #hud .row { display: flex; justify-content: space-between; }
+      #boot {
+        position: fixed; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 8px;
+        color: #67e8f9; font-size: 11px; letter-spacing: 2px;
+        pointer-events: none;
+      }
+      #boot .pulse {
+        width: 8px; height: 8px; border-radius: 4px; background: #22d3ee;
+        animation: pulse 1s infinite;
+      }
+      #boot .stages {
+        font-size: 9px; color: #0891b2; text-align: center; line-height: 1.6;
+      }
+      #err {
+        position: fixed; left: 12px; right: 12px; bottom: 12px;
+        font-size: 10px; color: #f87171; display: none;
+        white-space: pre-wrap; background: rgba(0,0,0,0.65);
+        padding: 6px 8px; border: 1px solid rgba(248,113,113,0.4);
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%      { opacity: 0.3; transform: scale(0.7); }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <div id="hud">
+      <div class="row"><span>3D · GLTF</span><span>ATTITUDE LIVE</span></div>
+      <div class="row"><span>BUS: ORB-01</span><span id="fps">— FPS</span></div>
+    </div>
+    <div id="boot">
+      <div class="pulse"></div>
+      <div>BOOTING VIEWER</div>
+      <div class="stages" id="stages">
+        HTML · ok<br/>
+        THREE · waiting<br/>
+        GLTF · waiting
+      </div>
+    </div>
+    <div id="err"></div>
+
+    <script>
+      // Stage / error reporter — kept as classic script so it's available
+      // before the three.js bundle executes.
+      window.__orbStages = { html: 'ok', three: 'waiting', gltf: 'waiting' };
+      window.__orbUpdateStages = function () {
+        var s = window.__orbStages;
+        var el = document.getElementById('stages');
+        if (el) el.innerHTML =
+          'HTML · ' + s.html + '<br/>' +
+          'THREE · ' + s.three + '<br/>' +
+          'GLTF · ' + s.gltf;
+      };
+      window.__orbShowError = function (msg) {
+        var el = document.getElementById('err');
+        if (el) { el.style.display = 'block'; el.textContent = String(msg); }
+        console.error('[orb-viewer]', msg);
+      };
+      window.addEventListener('error', function (e) {
+        window.__orbShowError('window.error: ' + (e.message || e));
+      });
+    </script>
+
+    <script src="./vendor/three.min.js"></script>
+    <script src="./vendor/GLTFLoader.js"></script>
+
+    <script>
+      (function () {
+        if (typeof THREE === 'undefined') {
+          window.__orbStages.three = 'failed';
+          window.__orbUpdateStages();
+          window.__orbShowError('THREE global missing after script load');
+          return;
+        }
+        window.__orbStages.three = 'ok';
+        window.__orbUpdateStages();
+
+        var canvas = document.getElementById('app');
+        var bootEl = document.getElementById('boot');
+        var fpsEl = document.getElementById('fps');
+
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+        else renderer.outputEncoding = THREE.sRGBEncoding;
+
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000005, 0.015);
+
+        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        camera.position.set(0, 0.1, 4.5);
+        camera.lookAt(0, 0, 0);
+
+        scene.add(new THREE.AmbientLight(0x102030, 0.9));
+        var key = new THREE.DirectionalLight(0xffffff, 2.4);
+        key.position.set(5, 3, 4); scene.add(key);
+        var rim = new THREE.DirectionalLight(0x22d3ee, 1.6);
+        rim.position.set(-4, -1, -3); scene.add(rim);
+        var fill = new THREE.PointLight(0xa78bfa, 0.6, 10);
+        fill.position.set(0, 0, 1.2); scene.add(fill);
+
+        // Cyan glow sprite behind the craft.
+        var glowC = document.createElement('canvas');
+        glowC.width = glowC.height = 256;
+        var g = glowC.getContext('2d');
+        var grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+        grd.addColorStop(0, 'rgba(34,211,238,0.45)');
+        grd.addColorStop(0.5, 'rgba(34,211,238,0.08)');
+        grd.addColorStop(1, 'rgba(34,211,238,0.0)');
+        g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
+        var glowTex = new THREE.CanvasTexture(glowC);
+        var glow = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: glowTex, transparent: true, depthWrite: false,
+          blending: THREE.AdditiveBlending
+        }));
+        glow.scale.set(6, 6, 1); glow.position.set(0, 0, -0.5); scene.add(glow);
+
+        // Faint orbit ring.
+        var ring = new THREE.Mesh(
+          new THREE.RingGeometry(2.4, 2.42, 96),
+          new THREE.MeshBasicMaterial({
+            color: 0x22d3ee, transparent: true, opacity: 0.18, side: THREE.DoubleSide
+          })
+        );
+        ring.rotation.x = Math.PI / 2; scene.add(ring);
+
+        // Starfield.
+        var starGeo = new THREE.BufferGeometry();
+        var count = 140;
+        var pos = new Float32Array(count * 3);
+        for (var i = 0; i < count; i++) {
+          var r = 8 + Math.random() * 12;
+          var t = Math.random() * Math.PI * 2;
+          var p = Math.acos(2 * Math.random() - 1);
+          pos[i * 3]     = r * Math.sin(p) * Math.cos(t);
+          pos[i * 3 + 1] = r * Math.sin(p) * Math.sin(t);
+          pos[i * 3 + 2] = r * Math.cos(p);
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+          color: 0xa5f3fc, size: 0.03, transparent: true, opacity: 0.7
+        })));
+
+        // Group that receives the incoming satellite model + attitude rotations.
+        // Nudged toward the upper-left of the viewport to compensate for the
+        // WebView's canvas framebuffer / CSS size mismatch — adjust these
+        // offsets if the camera or layout ever changes.
+        var group = new THREE.Group();
+        group.position.set(-1.2, 0.7, 0);
+        scene.add(group);
+
+        // ------ GLB intake bridge ------
+        // ArkTS pushes base64 chunks via runJavaScript (see Satellite3D.ets).
+        // When complete it calls window.__orbCommitGlb() which decodes and
+        // hands the ArrayBuffer to GLTFLoader.parse().
+        var glbChunks = [];
+        var glbBytesPushed = 0;
+
+        window.__orbResetGlb = function () {
+          glbChunks = [];
+          glbBytesPushed = 0;
+          window.__orbStages.gltf = 'receiving';
+          window.__orbUpdateStages();
+        };
+        window.__orbPushGlbChunk = function (b64Chunk) {
+          glbChunks.push(b64Chunk);
+          glbBytesPushed += b64Chunk.length;
+          // Update stage readout periodically.
+          window.__orbStages.gltf = 'rx ' + Math.round(glbBytesPushed / 1024) + ' kB';
+          window.__orbUpdateStages();
+        };
+        window.__orbCommitGlb = function () {
+          try {
+            var b64 = glbChunks.join('');
+            glbChunks = [];
+            var bin = atob(b64);
+            var len = bin.length;
+            var buf = new Uint8Array(len);
+            for (var i = 0; i < len; i++) buf[i] = bin.charCodeAt(i);
+            window.__orbStages.gltf = 'parsing ' + Math.round(len / 1024) + ' kB';
+            window.__orbUpdateStages();
+
+            var loader = new THREE.GLTFLoader();
+            loader.parse(
+              buf.buffer, '',
+              function (gltf) {
+                var model = gltf.scene;
+                var box = new THREE.Box3().setFromObject(model);
+                var size = box.getSize(new THREE.Vector3());
+                var center = box.getCenter(new THREE.Vector3());
+                var maxDim = Math.max(size.x, size.y, size.z) || 1;
+                var norm = 2.1 / maxDim;
+                model.position.sub(center.multiplyScalar(norm));
+                model.scale.setScalar(norm);
+                group.add(model);
+                window.__orbStages.gltf = 'ok';
+                window.__orbUpdateStages();
+                if (bootEl) bootEl.style.display = 'none';
+              },
+              function (err) {
+                window.__orbStages.gltf = 'parse failed';
+                window.__orbUpdateStages();
+                window.__orbShowError('GLTF parse: ' + (err && err.message ? err.message : err));
+              }
+            );
+          } catch (e) {
+            window.__orbStages.gltf = 'commit failed';
+            window.__orbUpdateStages();
+            window.__orbShowError('commit: ' + (e && e.message ? e.message : e));
+          }
+        };
+
+        // Signal readiness so ArkTS can start pushing chunks.
+        window.__orbViewerReady = true;
+
+        // ------ attitude bridge ------
+        var target = { pitch: 0, roll: 0, yaw: 0 };
+        var current = { pitch: 0, roll: 0, yaw: 0 };
+        var DEG = Math.PI / 180;
+
+        window.setAttitude = function (pitch, roll, yaw) {
+          target.pitch = Number(pitch) || 0;
+          target.roll  = Number(roll)  || 0;
+          target.yaw   = Number(yaw)   || 0;
+        };
+
+        function wrapYawDelta(a, b) {
+          var d = b - a;
+          while (d >  180) d -= 360;
+          while (d < -180) d += 360;
+          return d;
+        }
+
+        var resize = function () {
+          var w = window.innerWidth, h = window.innerHeight;
+          renderer.setSize(w, h, false);
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        var last = performance.now();
+        var frames = 0;
+        var fpsLast = last;
+
+        function tick() {
+          requestAnimationFrame(tick);
+          var now = performance.now();
+          var dt = Math.min((now - last) / 1000, 0.05);
+          last = now;
+
+          var t = 1 - Math.pow(0.002, dt);
+          current.pitch += (target.pitch - current.pitch) * t;
+          current.roll  += (target.roll  - current.roll)  * t;
+          current.yaw   += wrapYawDelta(current.yaw, target.yaw) * t;
+
+          group.rotation.x = current.pitch * DEG;
+          group.rotation.y = current.yaw   * DEG;
+          group.rotation.z = current.roll  * DEG;
+
+          var s = 5.8 + Math.sin(now * 0.002) * 0.2;
+          glow.scale.set(s, s, 1);
+          ring.rotation.z += dt * 0.12;
+
+          renderer.render(scene, camera);
+
+          frames++;
+          if (now - fpsLast > 500) {
+            fpsEl.textContent = Math.round((frames * 1000) / (now - fpsLast)) + ' FPS';
+            frames = 0;
+            fpsLast = now;
+          }
+        }
+        tick();
+      })();
+    </script>
+  </body>
+</html>

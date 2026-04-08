@@ -33,6 +33,15 @@ interface OrbState {
   velocity: number;
   updateSatellitePosition: (lat: number, lng: number, alt: number, velocity: number) => void;
 
+  // Attitude — streamed from the HarmonyOS ground-station app (pitch/roll/yaw in degrees).
+  attitudePitch: number;
+  attitudeRoll: number;
+  attitudeYaw: number;
+  remoteLinkState: 'idle' | 'connecting' | 'connected' | 'error';
+  remoteLinkDetail: string;
+  setAttitude: (pitch: number, roll: number, yaw: number) => void;
+  setRemoteLink: (state: 'idle' | 'connecting' | 'connected' | 'error', detail?: string) => void;
+
   // Target
   targetLat: number | null;
   targetLng: number | null;
@@ -78,6 +87,16 @@ export const useOrbStore = create<OrbState>((set) => ({
   velocity: 7.66,
   updateSatellitePosition: (lat, lng, alt, velocity) =>
     set({ satelliteLat: lat, satelliteLng: lng, satelliteAlt: alt, velocity }),
+
+  attitudePitch: 0,
+  attitudeRoll: 0,
+  attitudeYaw: 0,
+  remoteLinkState: 'idle',
+  remoteLinkDetail: 'standby',
+  setAttitude: (pitch, roll, yaw) =>
+    set({ attitudePitch: pitch, attitudeRoll: roll, attitudeYaw: yaw }),
+  setRemoteLink: (state, detail) =>
+    set({ remoteLinkState: state, remoteLinkDetail: detail ?? '' }),
 
   targetLat: null,
   targetLng: null,

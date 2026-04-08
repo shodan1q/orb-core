@@ -9,7 +9,9 @@ import ChatPanel from '@/components/ui/ChatPanel';
 import LaunchOverlay from '@/components/ui/LaunchOverlay';
 import PhotoViewer from '@/components/ui/PhotoViewer';
 import ControlPanel from '@/components/ui/ControlPanel';
+import RemoteLinkBadge from '@/components/ui/RemoteLinkBadge';
 import { useOrbStore } from '@/stores/useOrbStore';
+import { useRemoteLink } from '@/hooks/useRemoteLink';
 
 const OrbScene = dynamic(() => import('@/components/three/Scene'), {
   ssr: false,
@@ -91,6 +93,21 @@ function PovButton() {
 }
 
 export default function Home() {
+  const setShowPhotoViewer = useOrbStore((s) => s.setShowPhotoViewer);
+  const setReflection = useOrbStore((s) => s.setReflection);
+  const setShowControlPanel = useOrbStore((s) => s.setShowControlPanel);
+
+  // Open a WebSocket uplink to the HarmonyOS orbcore-app ground station.
+  // Attitude messages drive satellite rotation (see Satellite.tsx); commands
+  // trigger the same UI affordances as the on-screen control panel.
+  useRemoteLink({
+    onCommand: (action) => {
+      if (action === 'take_photo') setShowPhotoViewer(true);
+      else if (action === 'reflect') setReflection(true, 0.9);
+      else if (action === 'status') setShowControlPanel(true);
+    },
+  });
+
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#000005]">
       {/* 3D Scene (full screen background) */}
@@ -103,6 +120,7 @@ export default function Home() {
       <TopBar />
       <ControlButton />
       <PovButton />
+      <RemoteLinkBadge />
       <StatusPanel />
       <ChatPanel />
       <PhotoViewer />
