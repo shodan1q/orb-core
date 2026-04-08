@@ -32,19 +32,22 @@ void main() {
   vec4 nightColor = texture2D(nightTexture, vUv);
 
   // Boost night city lights
-  nightColor.rgb *= 1.8;
+  nightColor.rgb *= 2.8;
 
   // Sun illumination factor
   float sunDot = dot(normalize(vWorldNormal), normalize(sunDirection));
-  // Smooth terminator with wider twilight zone
-  float dayFactor = smoothstep(-0.15, 0.2, sunDot);
+  // Smooth terminator with wider twilight zone (更宽的过渡 + 更偏向白天)
+  float dayFactor = smoothstep(-0.35, 0.08, sunDot);
+
+  // 在夜晚区域叠加一份暗淡的白天贴图, 让大陆轮廓始终可见
+  vec3 nightBase = nightColor.rgb + dayColor.rgb * 0.55;
 
   // Blend day and night
-  vec3 color = mix(nightColor.rgb, dayColor.rgb, dayFactor);
+  vec3 color = mix(nightBase, dayColor.rgb, dayFactor);
 
-  // Diffuse lighting on day side
+  // Diffuse lighting on day side — 抬高暗部下限, 增大环境项, 让整体更亮
   float diffuse = max(sunDot, 0.0);
-  color *= mix(0.3, 1.0, diffuse * dayFactor) + 0.05;
+  color *= mix(0.78, 1.25, diffuse * dayFactor) + 0.22;
 
   // Specular highlight on oceans
   vec4 specMask = texture2D(specularTexture, vUv);

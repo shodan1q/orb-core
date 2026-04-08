@@ -57,6 +57,8 @@ interface OrbState {
   setShowLaunch: (show: boolean) => void;
   showPhotoViewer: boolean;
   setShowPhotoViewer: (show: boolean) => void;
+  showControlPanel: boolean;
+  setShowControlPanel: (show: boolean) => void;
 }
 
 export const useOrbStore = create<OrbState>((set) => ({
@@ -110,4 +112,6 @@ export const useOrbStore = create<OrbState>((set) => ({
   setShowLaunch: (show) => set({ showLaunch: show }),
   showPhotoViewer: false,
   setShowPhotoViewer: (show) => set({ showPhotoViewer: show }),
+  showControlPanel: false,
+  setShowControlPanel: (show) => set({ showControlPanel: show }),
 }));

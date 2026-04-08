@@ -1,11 +1,14 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
 import TopBar from '@/components/ui/TopBar';
 import StatusPanel from '@/components/ui/StatusPanel';
 import ChatPanel from '@/components/ui/ChatPanel';
 import LaunchOverlay from '@/components/ui/LaunchOverlay';
 import PhotoViewer from '@/components/ui/PhotoViewer';
+import ControlPanel from '@/components/ui/ControlPanel';
+import { useOrbStore } from '@/stores/useOrbStore';
 
 const OrbScene = dynamic(() => import('@/components/three/Scene'), {
   ssr: false,
@@ -19,6 +22,40 @@ const OrbScene = dynamic(() => import('@/components/three/Scene'), {
   ),
 });
 
+function ControlButton() {
+  const setShow = useOrbStore((s) => s.setShowControlPanel);
+  return (
+    <motion.button
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.6, duration: 0.5 }}
+      onClick={() => setShow(true)}
+      className="absolute top-16 left-5 z-20 group flex items-center gap-2 px-3 py-2 border border-cyan-500/30 bg-black/40 backdrop-blur-sm hover:border-cyan-400 hover:bg-cyan-500/10 transition-colors"
+      style={{ boxShadow: '0 0 20px rgba(34,211,238,0.08)' }}
+      title="卫星控制台"
+    >
+      {/* 小图标: 卫星 */}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-cyan-300 group-hover:text-cyan-100">
+        <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+        <rect x="3" y="10" width="6" height="4" stroke="currentColor" strokeWidth="1.2" />
+        <rect x="15" y="10" width="6" height="4" stroke="currentColor" strokeWidth="1.2" />
+        <line x1="9" y1="12" x2="9.5" y2="12" stroke="currentColor" strokeWidth="1.2" />
+        <line x1="14.5" y1="12" x2="15" y2="12" stroke="currentColor" strokeWidth="1.2" />
+        <line x1="12" y1="7" x2="12" y2="9.5" stroke="currentColor" strokeWidth="1.2" />
+        <line x1="12" y1="14.5" x2="12" y2="17" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+      <div className="text-left leading-tight">
+        <div className="text-[10px] font-mono text-cyan-300 group-hover:text-cyan-100 tracking-widest">
+          SAT CTRL
+        </div>
+        <div className="text-[8px] font-mono text-gray-500 tracking-wider">
+          卫星控制台
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
 export default function Home() {
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#000005]">
@@ -30,9 +67,11 @@ export default function Home() {
 
       {/* UI Overlay */}
       <TopBar />
+      <ControlButton />
       <StatusPanel />
       <ChatPanel />
       <PhotoViewer />
+      <ControlPanel />
 
       {/* Bottom attribution */}
       <div className="absolute bottom-2 right-4 z-10 text-[9px] font-mono text-gray-700">

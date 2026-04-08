@@ -796,8 +796,8 @@ function Scene() {
 
   return (
     <>
-      <ambientLight intensity={0.05} />
-      <directionalLight position={[10, 3, 5]} intensity={1.5} color={0xfff5e0} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 3, 5]} intensity={2.8} color={0xfff5e0} />
 
       <NebulaClouds />
       <Stars />
@@ -848,7 +848,7 @@ export default function OrbScene() {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,5,0.7) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,5,0.45) 100%)',
         }}
       />
     </div>
