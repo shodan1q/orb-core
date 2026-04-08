@@ -125,11 +125,13 @@ class RemoteClientImpl {
       yaw: this.wrap360(rawYaw - this.calibrationOffset.yaw)
     };
 
-    // Light low-pass filter to tame jitter before we both draw and transmit.
+    // Low-pass filter: small lerp alpha means the stream lags the raw
+    // sensor, which is exactly what we want — tames both gyro jitter and
+    // the feeling that the craft "snaps" when the phone is flicked.
     const smooth: Attitude = {
-      pitch: this.lerp(this.attitude.pitch, next.pitch, 0.35),
-      roll: this.lerp(this.attitude.roll, next.roll, 0.35),
-      yaw: this.lerpAngle(this.attitude.yaw, next.yaw, 0.35)
+      pitch: this.lerp(this.attitude.pitch, next.pitch, 0.18),
+      roll: this.lerp(this.attitude.roll, next.roll, 0.18),
+      yaw: this.lerpAngle(this.attitude.yaw, next.yaw, 0.18)
     };
     this.emitAttitude(smooth);
 
@@ -183,6 +185,38 @@ class RemoteClientImpl {
     }
     this.ws = null;
     this.emitState('idle');
+  }
+
+  // Force-rebuild the WebSocket from scratch. Use this on resume from
+  // background/lock — HarmonyOS silently suspends the socket and the old
+  // state can linger as `connected` even though no bytes flow anymore.
+  async reconnect(): Promise<boolean> {
+    this.log('reconnect requested');
+    try {
+      if (this.ws) {
+        await this.ws.close();
+      }
+    } catch (_e) {
+      // ignore — we're about to throw it away
+    }
+    this.ws = null;
+    this.state = 'idle';
+    return await this.connect();
+  }
+
+  // Tear down and re-subscribe the orientation sensor. HarmonyOS pauses
+  // sensor callbacks while the screen is off; simply checking the local
+  // sensorActive flag would be a no-op and we'd never start receiving
+  // events again.
+  restartSensors(): void {
+    this.log('sensor restart requested');
+    try {
+      sensor.off(sensor.SensorId.ORIENTATION);
+    } catch (_e) {
+      // ignore
+    }
+    this.sensorActive = false;
+    this.startSensors();
   }
 
   sendCommand(action: 'take_photo' | 'reflect' | 'status'): void {

@@ -271,7 +271,10 @@
           var dt = Math.min((now - last) / 1000, 0.05);
           last = now;
 
-          var t = 1 - Math.pow(0.002, dt);
+          // Damped follow: bigger base -> slower convergence toward the
+          // target attitude. Tuned so a fast wrist flick produces a gentle
+          // glide on the craft instead of snapping instantly.
+          var t = 1 - Math.pow(0.2, dt);
           current.pitch += (target.pitch - current.pitch) * t;
           current.roll  += (target.roll  - current.roll)  * t;
           current.yaw   += wrapYawDelta(current.yaw, target.yaw) * t;

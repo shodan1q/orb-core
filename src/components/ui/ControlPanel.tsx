@@ -85,6 +85,24 @@ function AttitudePanel() {
   const [mode, setMode] = useState<'NADIR' | 'SUN' | 'TARGET' | 'FREE'>('NADIR');
   const [thrust, setThrust] = useState(0);
 
+  // HarmonyOS remote station uplink. When the phone is connected, its
+  // gyroscope drives the sliders / 3D model in real time; when offline,
+  // the sliders stay fully manual.
+  const attitudePitch = useOrbStore((s) => s.attitudePitch);
+  const attitudeRoll = useOrbStore((s) => s.attitudeRoll);
+  const attitudeYaw = useOrbStore((s) => s.attitudeYaw);
+  const remoteLinkState = useOrbStore((s) => s.remoteLinkState);
+  const remoteActive = remoteLinkState === 'connected';
+
+  useEffect(() => {
+    if (!remoteActive) return;
+    // Clamp into the slider's -180..180 domain (phone yaw is 0..360).
+    const wrap = (v: number) => (v > 180 ? v - 360 : v);
+    setPitch(attitudePitch);
+    setRoll(attitudeRoll);
+    setYaw(wrap(attitudeYaw));
+  }, [attitudePitch, attitudeRoll, attitudeYaw, remoteActive]);
+
   const Slider = ({
     label,
     value,
@@ -118,7 +136,13 @@ function AttitudePanel() {
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-mono text-cyan-400 tracking-widest">ATTITUDE CTRL</span>
-        <span className="text-[9px] font-mono text-amber-400">● MANUAL</span>
+        <span
+          className={`text-[9px] font-mono ${
+            remoteActive ? 'text-emerald-300' : 'text-amber-400'
+          }`}
+        >
+          ● {remoteActive ? 'HM REMOTE' : 'MANUAL'}
+        </span>
       </div>
 
       {/* 姿态模式 */}

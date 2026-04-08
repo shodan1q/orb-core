@@ -66,6 +66,25 @@ struct RemoteControl {
     remoteClient.stopSensors();
   }
 
+  // Page becomes visible again — e.g. after the phone was locked and
+  // unlocked, or the user switched back from another app. HarmonyOS pauses
+  // sensor callbacks and may silently drop the WebSocket during suspend,
+  // so force a rebuild of both here. Idempotent: re-running on an already
+  // healthy link is cheap.
+  onPageShow(): void {
+    remoteClient.restartSensors();
+    // Even if the local state still reads as "connected", the underlying
+    // socket may already be dead (no close event delivered during sleep).
+    // Rebuilding unconditionally guarantees a live pipe.
+    remoteClient.reconnect();
+  }
+
+  onPageHide(): void {
+    // Leave the sensor subscription in place so a quick screen-off / on
+    // doesn't miss events — HarmonyOS will pause delivery while suspended
+    // and we'll refresh everything via onPageShow on resume.
+  }
+
   private statusLabel(): string {
     if (this.connState === 'connected') return 'ONLINE';
     if (this.connState === 'connecting') return 'LINKING';
