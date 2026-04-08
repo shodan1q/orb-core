@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -109,12 +110,41 @@ export default function PovPage() {
             </div>
           </div>
 
-          <div className="text-right leading-tight font-mono">
-            <div className="text-[10px] text-cyan-300 tracking-widest">
-              TARGET · <span style={{ color: current.color }}>{current.label}</span>
-            </div>
-            <div className="text-[9px] text-gray-500">
-              {clock} UTC · FRAME #{String(frame).padStart(5, '0')}
+          <div className="flex items-center gap-3 pointer-events-auto">
+            <Link
+              href="/tracker"
+              className="group flex items-center gap-2 px-3 py-2 border border-violet-500/40 bg-black/50 backdrop-blur-sm hover:border-violet-300 hover:bg-violet-500/15 transition-colors"
+              style={{ boxShadow: '0 0 18px rgba(167,139,250,0.15)' }}
+              title="卫星追踪与轨道可视化"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="text-violet-300 group-hover:text-violet-100"
+              >
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.4" />
+                <ellipse cx="12" cy="12" rx="9" ry="3.5" stroke="currentColor" strokeWidth="1.2" />
+                <circle cx="12" cy="8.5" r="1.2" fill="currentColor" />
+                <circle cx="18" cy="13" r="0.9" fill="currentColor" />
+                <circle cx="8" cy="15" r="0.8" fill="currentColor" />
+              </svg>
+              <div className="text-left leading-tight">
+                <div className="text-[10px] font-mono text-violet-300 group-hover:text-violet-100 tracking-widest">
+                  TRACKER
+                </div>
+                <div className="text-[8px] font-mono text-gray-500">轨道追踪</div>
+              </div>
+            </Link>
+
+            <div className="text-right leading-tight font-mono">
+              <div className="text-[10px] text-cyan-300 tracking-widest">
+                TARGET · <span style={{ color: current.color }}>{current.label}</span>
+              </div>
+              <div className="text-[9px] text-gray-500">
+                {clock} UTC · FRAME #{String(frame).padStart(5, '0')}
+              </div>
             </div>
           </div>
         </div>

@@ -28,11 +28,22 @@ function SatelliteMesh({
 
   const model = useMemo(() => {
     const cloned = scene.clone(true);
+    // Deep-clone materials so this Canvas has its own instances
+    // (shared materials across multiple WebGL contexts cause render issues)
+    cloned.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map((m) => m.clone());
+      } else if (mesh.material) {
+        mesh.material = mesh.material.clone();
+      }
+    });
     const box = new THREE.Box3().setFromObject(cloned);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    const norm = 2 / maxDim;
+    const norm = 3.5 / maxDim;
     cloned.position.sub(center.multiplyScalar(norm));
     cloned.scale.setScalar(norm);
     return cloned;
@@ -141,7 +152,7 @@ export default function ControlSatellite({
 }) {
   return (
     <Canvas
-      camera={{ position: [5, 3, 5], fov: 40 }}
+      camera={{ position: [3.2, 2, 3.2], fov: 38 }}
       gl={{ antialias: true, alpha: true }}
       style={{ background: 'transparent' }}
     >
@@ -154,8 +165,8 @@ export default function ControlSatellite({
 
         <OrbitControls
           enablePan={false}
-          minDistance={3}
-          maxDistance={12}
+          minDistance={2}
+          maxDistance={10}
           enableDamping
           dampingFactor={0.1}
         />

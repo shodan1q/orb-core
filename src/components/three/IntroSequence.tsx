@@ -62,6 +62,15 @@ function EarthStage({ timeRef }: TP) {
   const { scene } = useGLTF('/models/satellite.glb');
   const satModel = useMemo(() => {
     const c = scene.clone(true);
+    c.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (Array.isArray(mesh.material)) {
+        mesh.material = mesh.material.map((m) => m.clone());
+      } else if (mesh.material) {
+        mesh.material = mesh.material.clone();
+      }
+    });
     const box = new THREE.Box3().setFromObject(c);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
