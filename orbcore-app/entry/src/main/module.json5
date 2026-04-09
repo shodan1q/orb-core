@@ -48,6 +48,21 @@
             "actions": [
               "ohos.want.action.home"
             ]
+          },
+          {
+            "entities": [
+              "entity.system.default"
+            ],
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "orbcore",
+                "host": "app",
+                "pathStartWith": "/"
+              }
+            ]
           }
         ]
       }

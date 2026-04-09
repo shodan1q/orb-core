@@ -30,7 +30,15 @@ struct RemoteControl {
   @State velocityKmS: number = 7.66;
   @State logs: LogLine[] = [];
   @State lastCommand: string = '—';
+  // Simulated orbital attitude — slowly drifts so the display always
+  // shows "alive" numbers even when the phone is lying flat.
+  @State simPitch: number = -12.4;
+  @State simRoll: number = 3.7;
+  @State simYaw: number = 247.1;
+  private simTimer: number = -1;
   private logCounter: number = 0;
+  private lastAttitudeUiTs: number = 0;
+  private lastLogUiTs: number = 0;
 
   aboutToAppear(): void {
     this.connState = remoteClient.getState();
@@ -46,24 +54,46 @@ struct RemoteControl {
       else if (s === 'idle') this.statusDetail = 'standby';
     });
 
+    // Throttle @State attitude updates to ~8 Hz. The sensor fires at
+    // 30 Hz but re-rendering the full page (including the WebView 3D
+    // model) 30 times per second is too expensive.
     remoteClient.onAttitude((a: Attitude) => {
+      const now = Date.now();
+      if (now - this.lastAttitudeUiTs < 120) return;
+      this.lastAttitudeUiTs = now;
       this.pitch = a.pitch;
       this.roll = a.roll;
       this.yaw = a.yaw;
     });
 
+    // Throttle log updates to max once per second.
     remoteClient.onLog((line: string) => {
+      const now = Date.now();
+      if (now - this.lastLogUiTs < 1000) return;
+      this.lastLogUiTs = now;
       this.logCounter += 1;
-      const next: LogLine[] = this.logs.slice(-7);
+      const next: LogLine[] = this.logs.slice(-4);
       next.push({ id: this.logCounter, text: line });
       this.logs = next;
     });
 
     remoteClient.startSensors();
+
+    // Simulate slow orbital attitude drift for the telemetry strip.
+    this.simTimer = setInterval(() => {
+      const t = Date.now() * 0.001;
+      this.simPitch = -12.4 + Math.sin(t * 0.13) * 8.5 + Math.sin(t * 0.37) * 2.1;
+      this.simRoll = 3.7 + Math.sin(t * 0.09 + 1.0) * 5.2 + Math.cos(t * 0.29) * 1.8;
+      this.simYaw = (247.1 + t * 2.3 + Math.sin(t * 0.17) * 6.0) % 360;
+    }, 500);
   }
 
   aboutToDisappear(): void {
     remoteClient.stopSensors();
+    if (this.simTimer !== -1) {
+      clearInterval(this.simTimer);
+      this.simTimer = -1;
+    }
   }
 
   // Page becomes visible again — e.g. after the phone was locked and
@@ -221,13 +251,46 @@ struct RemoteControl {
           }
         })
 
+        // ---------- Console log (below AR MODE) ----------
+        Column() {
+          Text('LINK CONSOLE')
+            .fontSize(9)
+            .fontColor(Theme.CYAN_DIM)
+            .letterSpacing(2)
+          Scroll() {
+            Column() {
+              ForEach(this.logs, (item: LogLine) => {
+                Text(item.text)
+                  .fontSize(10)
+                  .fontColor(Theme.TEXT_DIM)
+                  .margin({ top: 2 })
+              }, (item: LogLine) => item.id.toString())
+            }
+            .alignItems(HorizontalAlign.Start)
+            .width('100%')
+          }
+          .layoutWeight(1)
+          .scrollBar(BarState.Off)
+        }
+        .alignItems(HorizontalAlign.Start)
+        .width('92%')
+        .height(64)
+        .margin({ top: 10 })
+        .padding(10)
+        .clip(true)
+        .backgroundColor('rgba(3,7,18,0.7)')
+        .border({ width: 1, color: Theme.BORDER_HAIR })
+
         // ---------- Attitude telemetry strip ----------
+        // Shows simulated orbital attitude (slowly drifting) so the
+        // display always looks alive. The real sensor values drive the
+        // 3D model and WS stream separately.
         Row() {
-          this.LabelValue('PITCH', this.formatDeg(this.pitch), Theme.CYAN_BRIGHT)
+          this.LabelValue('PITCH', this.formatDeg(this.simPitch), Theme.CYAN_BRIGHT)
           Blank().layoutWeight(1)
-          this.LabelValue('ROLL', this.formatDeg(this.roll), Theme.CYAN_BRIGHT)
+          this.LabelValue('ROLL', this.formatDeg(this.simRoll), Theme.CYAN_BRIGHT)
           Blank().layoutWeight(1)
-          this.LabelValue('YAW', this.formatDeg(this.yaw), Theme.CYAN_BRIGHT)
+          this.LabelValue('YAW', this.formatDeg(this.simYaw), Theme.CYAN_BRIGHT)
           Blank().layoutWeight(1)
           this.LabelValue('ALT', `${this.altitudeKm.toFixed(1)} KM`, Theme.VIOLET)
           Blank().layoutWeight(1)
@@ -388,26 +451,7 @@ struct RemoteControl {
         .width('92%')
         .margin({ top: 12 })
 
-        // ---------- Console log ----------
-        Column() {
-          Text('LINK CONSOLE')
-            .fontSize(9)
-            .fontColor(Theme.CYAN_DIM)
-            .letterSpacing(2)
-          ForEach(this.logs, (item: LogLine) => {
-            Text(item.text)
-              .fontSize(10)
-              .fontColor(Theme.TEXT_DIM)
-              .margin({ top: 2 })
-          }, (item: LogLine) => item.id.toString())
-        }
-        .alignItems(HorizontalAlign.Start)
-        .width('92%')
-        .height(64)
-        .margin({ top: 10, bottom: 8 })
-        .padding(10)
-        .backgroundColor('rgba(3,7,18,0.7)')
-        .border({ width: 1, color: Theme.BORDER_HAIR })
+        // (Console log moved above, under AR MODE)
       }
       .width('100%')
       .height('100%')

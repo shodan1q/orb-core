@@ -15,6 +15,38 @@
     {
       "name": "camera_reason",
       "value": "用于 AR 模式把 Orb Core 卫星叠加到真实场景"
+    },
+    {
+      "name": "intent_open",
+      "value": "打开星核"
+    },
+    {
+      "name": "intent_open_desc",
+      "value": "打开星核卫星地面站"
+    },
+    {
+      "name": "intent_photo",
+      "value": "卫星拍照"
+    },
+    {
+      "name": "intent_photo_desc",
+      "value": "指挥星核卫星拍摄照片"
+    },
+    {
+      "name": "intent_reflect",
+      "value": "反射阳光"
+    },
+    {
+      "name": "intent_reflect_desc",
+      "value": "指挥星核卫星反射阳光到指定位置"
+    },
+    {
+      "name": "intent_status",
+      "value": "查看卫星状态"
+    },
+    {
+      "name": "intent_status_desc",
+      "value": "查看星核卫星当前遥测数据和系统状态"
     }
   ]
 }

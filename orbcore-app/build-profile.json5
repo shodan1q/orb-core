@@ -7,11 +7,11 @@
         "material": {
           "certpath": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.cer",
           "keyAlias": "debugKey",
-          "keyPassword": "0000001B275C620B131E8AFA8713FA5EB58B32EEDBA9C42E96447C15B08963883C33EAD6864B8B17FA83E4",
+          "keyPassword": "0000001B842E77D3B8C433B44B0872D2C631C31EC6FD2D4026EC5DB04F30EBC0162E8835CE7ADFAB41CE23",
           "profile": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.p7b",
           "signAlg": "SHA256withECDSA",
           "storeFile": "/Users/shodan/.ohos/config/default_orbcore-app_AUtGSTGcUMU4VofMcPzBH0a8630TSmKm2JWKzJRzyBg=.p12",
-          "storePassword": "0000001B7A364C07DB5D9BB8E2B2A71E3B6AD1FC8E754744EC60DB5594EF36AC2973AE68A482FB09FBB5F7"
+          "storePassword": "0000001B3053FE95799B8CBFE8222F508C9F6DD319CB65AB617F9BEF34FCC1EEA39C0FFCA4AE2C8A60E1B8"
         }
       }
     ],

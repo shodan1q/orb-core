@@ -56,6 +56,7 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
 
   // Keep a ref so smoothing state survives re-renders without re-subscribing.
   const smoothed = useRef({ pitch: 0, roll: 0, yaw: 0 });
+  const lastStoreUpdate = useRef(0);
 
   useEffect(() => {
     if (!enabled) return;
@@ -103,6 +104,11 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
           while (diff > 180) diff -= 360;
           while (diff < -180) diff += 360;
           smoothed.current.yaw = (smoothed.current.yaw + diff * t + 360) % 360;
+          // Throttle store updates to ~10 Hz to avoid re-rendering the
+          // entire component tree 30 times per second.
+          const now = performance.now();
+          if (now - lastStoreUpdate.current < 100) return;
+          lastStoreUpdate.current = now;
           setAttitude(
             smoothed.current.pitch,
             smoothed.current.roll,

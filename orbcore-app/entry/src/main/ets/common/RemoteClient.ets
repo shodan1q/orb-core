@@ -261,9 +261,10 @@ class RemoteClientImpl {
         // Update local attitude from the web dashboard so the phone UI
         // mirrors the control-panel state. Suppress the local sensor for
         // 500 ms so the next gyro frame doesn't immediately overwrite.
-        this.remoteOverrideUntil = Date.now() + 500;
+        this.remoteOverrideUntil = Date.now() + 1000;
         this.emitAttitude(incoming);
-        this.log(`<- attitude P${incoming.pitch.toFixed(1)} R${incoming.roll.toFixed(1)} Y${incoming.yaw.toFixed(1)}`);
+        // Don't log every attitude frame — it floods the console and
+        // causes lag from array slicing + UI re-renders.
       } else {
         this.log(`<- ${raw}`);
       }

@@ -105,17 +105,20 @@ function AttitudePanel() {
     setYaw(wrap(attitudeYaw));
   }, [attitudePitch, attitudeRoll, attitudeYaw, remoteActive]);
 
-  // Stream slider values back through the relay at ~10 Hz so connected
-  // phones continuously mirror the web control-panel state. A single
-  // send-on-change isn't enough because the phone's sensor overwrites
-  // the value within 500 ms if it doesn't keep receiving fresh frames.
+  // Send slider values through the relay at ~2 Hz so connected phones
+  // can mirror the control-panel state without overwhelming the WS link.
   const attRef = useRef({ pitch: 0, roll: 0, yaw: 0 });
+  const lastSentRef = useRef({ pitch: 0, roll: 0, yaw: 0 });
   attRef.current = { pitch, roll, yaw };
   useEffect(() => {
     const timer = setInterval(() => {
       const a = attRef.current;
+      const l = lastSentRef.current;
+      // Only send when values actually changed.
+      if (a.pitch === l.pitch && a.roll === l.roll && a.yaw === l.yaw) return;
+      lastSentRef.current = { ...a };
       sendRemoteAttitude(a.pitch, a.roll, a.yaw);
-    }, 100);
+    }, 500);
     return () => clearInterval(timer);
   }, []);
 
