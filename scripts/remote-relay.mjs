@@ -14,16 +14,16 @@
 //
 // Usage:
 //   npm install ws           # once, inside orb-core/
-//   node scripts/remote-relay.mjs           # defaults to 0.0.0.0:3001
+//   node scripts/remote-relay.mjs           # defaults to 0.0.0.0:8882
 //   PORT=4000 node scripts/remote-relay.mjs # custom port
 //
-// On the phone, enter:   ws://<your-laptop-ip>:3001
-// On the web dashboard:  NEXT_PUBLIC_REMOTE_WS_URL=ws://localhost:3001
+// On the phone, enter:   ws://<your-laptop-ip>:8882
+// On the web dashboard:  NEXT_PUBLIC_REMOTE_WS_URL=ws://localhost:8882
 
 import { WebSocketServer } from 'ws';
 import { networkInterfaces } from 'os';
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? 8882);
 const HOST = process.env.HOST ?? '0.0.0.0';
 
 const wss = new WebSocketServer({ host: HOST, port: PORT });

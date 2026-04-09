@@ -37,7 +37,7 @@ class RemoteClientImpl {
   private sensorActive: boolean = false;
   private lastSendTs: number = 0;
   private sendIntervalMs: number = 33; // ~30 Hz stream to the relay
-  private url: string = 'ws://172.20.10.3:3001';
+  private url: string = 'ws://172.20.10.3:8882';
 
   private stateListeners: StateListener[] = [];
   private attitudeListeners: AttitudeListener[] = [];

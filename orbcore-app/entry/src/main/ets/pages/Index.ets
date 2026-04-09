@@ -11,7 +11,7 @@ import { remoteClient, ConnectionState } from '../common/RemoteClient';
 @Entry
 @Component
 struct Index {
-  @State url: string = 'ws://172.20.10.3:3001';
+  @State url: string = 'ws://172.20.10.3:8882';
   @State connState: ConnectionState = 'idle';
   @State statusDetail: string = 'standby';
   @State tickerPhase: number = 0;

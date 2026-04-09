@@ -13,7 +13,7 @@
 //
 // The relay URL is read from NEXT_PUBLIC_REMOTE_WS_URL, with a localhost
 // fallback for on-desk development. During the hackathon demo we run a small
-// ws relay on port 3001 so the phone and the dashboard can meet on the same
+// ws relay on port 8882 so the phone and the dashboard can meet on the same
 // LAN without a Next.js server route.
 
 import { useEffect, useRef } from 'react';
@@ -44,7 +44,7 @@ interface Options {
 
 const DEFAULT_URL =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_REMOTE_WS_URL) ||
-  'ws://localhost:3001';
+  'ws://localhost:8882';
 
 export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) {
   const setAttitude = useOrbStore((s) => s.setAttitude);
