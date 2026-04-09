@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-const XIAOZHI_WS_URL =
+const OPENCLAW_WS_URL =
   'wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzOTEzMiwiYWdlbnRJZCI6MTY4NTY1NywiZW5kcG9pbnRJZCI6ImFnZW50XzE2ODU2NTciLCJwdXJwb3NlIjoibWNwLWVuZHBvaW50IiwiaWF0IjoxNzc1NTc4NjMyLCJleHAiOjE4MDcxMzYyMzJ9.DF8QMXrUZho08bDKKeRpane2K8y3HhrcoDYMR73E5tJ21NN3qnnH4erBYLCaEGYbJVA9mx_IDvR9--oCyDJTWQ';
 
 const RELAY_WS_URL =
@@ -41,7 +41,7 @@ const TOOLS = [
   {
     name: 'push_message',
     description:
-      '把一段对话消息推送到网页上展示。每当用户与小智对话或小智产生回复时调用此工具，把内容同步给网页。',
+      '把一段对话消息推送到网页上展示。每当用户对话或产生回复时调用此工具，把内容同步给网页。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -156,7 +156,7 @@ const TOOLS = [
   },
 ] as const;
 
-export default function XiaoZhiPage() {
+export default function XiaoYiPage() {
   const [state, setState] = useState<ConnState>('idle');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -229,7 +229,7 @@ export default function XiaoZhiPage() {
     return new Promise((resolve) => {
       pendingStatusResolve.current = resolve;
       const reqId = uid();
-      sendToRelay({ type: 'status_request', id: reqId, origin: 'xiaozhi-mcp' });
+      sendToRelay({ type: 'status_request', id: reqId, origin: 'openclaw-mcp' });
       // Timeout after 3s
       setTimeout(() => {
         if (pendingStatusResolve.current === resolve) {
@@ -263,7 +263,7 @@ export default function XiaoZhiPage() {
           result: {
             protocolVersion: PROTOCOL_VERSION,
             capabilities: { tools: {} },
-            serverInfo: { name: 'orb-core-xiaozhi-bridge', version: '0.2.0' },
+            serverInfo: { name: 'orb-core-openclaw-bridge', version: '0.2.0' },
           },
         });
         return;
@@ -308,13 +308,13 @@ export default function XiaoZhiPage() {
             type: 'command',
             action: 'take_photo',
             ...(lat != null && lng != null ? { lat, lng } : {}),
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
           });
           // Also request a capture
           sendToRelay({
             type: 'capture_request',
             id: uid(),
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
             ...(lat != null && lng != null ? { target_lat: lat, target_lng: lng } : {}),
           });
           const posInfo = lat != null && lng != null ? `目标坐标: ${lat}, ${lng}` : '当前视角';
@@ -335,7 +335,7 @@ export default function XiaoZhiPage() {
             action: 'reflect',
             intensity,
             ...(lat != null && lng != null ? { lat, lng } : {}),
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
           });
           send({
             jsonrpc: '2.0', id,
@@ -355,7 +355,7 @@ export default function XiaoZhiPage() {
             roll,
             yaw,
             ts: Date.now(),
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
           });
           send({
             jsonrpc: '2.0', id,
@@ -389,7 +389,7 @@ export default function XiaoZhiPage() {
             type: 'command',
             action: 'navigate',
             page,
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
           } as unknown);
           const pageNames: Record<string, string> = {
             dashboard: '主控台',
@@ -410,7 +410,7 @@ export default function XiaoZhiPage() {
           sendToRelay({
             type: 'command',
             action: 'point_to_sun',
-            origin: 'xiaozhi-mcp',
+            origin: 'openclaw-mcp',
           });
           send({
             jsonrpc: '2.0', id,
@@ -444,7 +444,7 @@ export default function XiaoZhiPage() {
     log('info', 'connecting...');
     let ws: WebSocket;
     try {
-      ws = new WebSocket(XIAOZHI_WS_URL);
+      ws = new WebSocket(OPENCLAW_WS_URL);
     } catch (e) {
       log('error', `WebSocket ctor failed: ${(e as Error).message}`);
       setState('error');
@@ -522,10 +522,10 @@ export default function XiaoZhiPage() {
         <header className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl tracking-widest text-cyan-300">
-              XIAOZHI · MCP BRIDGE
+              OPENCLAW · MCP BRIDGE
             </h1>
             <p className="text-[11px] text-zinc-500 mt-1">
-              小艺 OpenClaw 端点桥 — 语音控制卫星姿态、拍照、反射阳光、页面导航
+              OpenClaw MCP 端点桥 — 语音控制卫星姿态、拍照、反射阳光、页面导航
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -570,10 +570,10 @@ export default function XiaoZhiPage() {
           <div className="p-4 max-h-[55vh] overflow-y-auto space-y-3">
             {messages.length === 0 && (
               <div className="text-[11px] text-zinc-600 text-center py-12">
-                等待小艺推送消息…
+                等待 OpenClaw 推送消息…
                 <br />
                 <span className="text-zinc-700">
-                  对小艺说"帮我拍张照片"、"打开卫星追踪"、"调整卫星姿态"试试
+                  通过小艺语音说"帮我拍张照片"、"打开卫星追踪"、"调整卫星姿态"试试
                 </span>
               </div>
             )}
@@ -590,7 +590,7 @@ export default function XiaoZhiPage() {
                   }`}
                 >
                   <div className="text-[9px] tracking-widest opacity-60 mb-1">
-                    {m.role === 'user' ? 'USER' : 'XIAOYI'} ·{' '}
+                    {m.role === 'user' ? 'USER' : 'OPENCLAW'} ·{' '}
                     {new Date(m.ts).toLocaleTimeString()}
                   </div>
                   <div className="whitespace-pre-wrap break-words">{m.text}</div>
