@@ -23,6 +23,7 @@ import { BusinessError } from '@ohos.base';
 // the WebView via runJavaScript from Satellite3D, so it stays in rawfile.
 const VIEWER_FILES: string[] = [
   'satellite-viewer.html',
+  'ar-viewer.html',
   'vendor/three.min.js',
   'vendor/GLTFLoader.js'
 ];
@@ -54,10 +55,10 @@ function writeFile(path: string, data: Uint8Array): void {
 }
 
 /**
- * Materialise the viewer bundle under `<filesDir>/viewer` and return the
- * absolute path to `satellite-viewer.html`. Safe to call on every page open
- * — the copy is cheap and overwrites in place so code changes during dev
- * take effect on the next launch.
+ * Materialise the viewer bundle under `<filesDir>/viewer`. Safe to call on
+ * every page open — the copy is cheap and overwrites in place so code
+ * changes during dev take effect on the next launch. Returns the absolute
+ * base directory so callers can build `file://<base>/<page>.html` URLs.
  */
 export function ensureViewerAssets(context: common.UIAbilityContext): string {
   const base: string = context.filesDir + '/viewer';
@@ -74,5 +75,15 @@ export function ensureViewerAssets(context: common.UIAbilityContext): string {
     writeFile(target, data);
   }
 
-  return base + '/satellite-viewer.html';
+  return base;
+}
+
+/** Convenience: absolute file:// URL for the satellite (remote) viewer. */
+export function satelliteViewerUrl(base: string): string {
+  return 'file://' + base + '/satellite-viewer.html';
+}
+
+/** Convenience: absolute file:// URL for the AR viewer. */
+export function arViewerUrl(base: string): string {
+  return 'file://' + base + '/ar-viewer.html';
 }

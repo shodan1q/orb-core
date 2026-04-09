@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Orb Core · AR</title>
+    <style>
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: transparent; overflow: hidden;
+        font-family: -apple-system, sans-serif; color: #94a3b8;
+      }
+      #app {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      }
+      #err {
+        position: fixed; left: 12px; right: 12px; bottom: 12px;
+        font-size: 10px; color: #f87171; display: none;
+        white-space: pre-wrap; background: rgba(0,0,0,0.65);
+        padding: 6px 8px; border: 1px solid rgba(248,113,113,0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="app"></canvas>
+    <div id="err"></div>
+
+    <script>
+      window.__orbShowError = function (msg) {
+        var el = document.getElementById('err');
+        if (el) { el.style.display = 'block'; el.textContent = String(msg); }
+        console.error('[ar-viewer]', msg);
+      };
+      window.addEventListener('error', function (e) {
+        window.__orbShowError('window.error: ' + (e.message || e));
+      });
+    </script>
+
+    <script src="./vendor/three.min.js"></script>
+    <script src="./vendor/GLTFLoader.js"></script>
+
+    <script>
+      (function () {
+        if (typeof THREE === 'undefined') {
+          window.__orbShowError('THREE global missing');
+          return;
+        }
+
+        var canvas = document.getElementById('app');
+
+        // Transparent renderer — the XComponent behind us paints the
+        // HarmonyOS AR Engine camera feed; we only draw the virtual layer.
+        var renderer = new THREE.WebGLRenderer({
+          canvas: canvas, antialias: true, alpha: true, premultipliedAlpha: false
+        });
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        var scene = new THREE.Scene();
+
+        // Camera — view and projection matrices are driven every frame by
+        // the HarmonyOS AR Engine session via window.arSetCamera().
+        var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+        camera.matrixAutoUpdate = false; // we inject matrices directly
+
+        // Lighting — warm key, cyan rim, violet fill. Identical palette to
+        // the main satellite viewer so the craft reads consistently across
+        // the two contexts.
+        scene.add(new THREE.AmbientLight(0x6b8aa6, 1.0));
+        var key = new THREE.DirectionalLight(0xffffff, 2.4);
+        key.position.set(4, 6, 3); scene.add(key);
+        var rim = new THREE.DirectionalLight(0x22d3ee, 1.8);
+        rim.position.set(-4, -2, -3); scene.add(rim);
+        var fill = new THREE.PointLight(0xa78bfa, 0.8, 12);
+        fill.position.set(0, 0, 2); scene.add(fill);
+
+        // ----- Detected plane visualisation ---------------------------------
+        // A single re-usable group of wireframe grids: we pool meshes so a
+        // new AR plane doesn't allocate on the hot path.
+        var planeGroup = new THREE.Group();
+        scene.add(planeGroup);
+        var planePool = [];
+
+        function getPlaneMesh(i) {
+          if (planePool[i]) return planePool[i];
+          var mat = new THREE.MeshBasicMaterial({
+            color: 0x22d3ee,
+            transparent: true,
+            opacity: 0.28,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            wireframe: true
+          });
+          var geo = new THREE.PlaneGeometry(1, 1, 6, 6);
+          // Rotate so the plane lies on AR's XZ plane (y up).
+          geo.rotateX(-Math.PI / 2);
+          var mesh = new THREE.Mesh(geo, mat);
+          mesh.matrixAutoUpdate = false;
+          planeGroup.add(mesh);
+
+          // Solid dim fill underneath the wireframe for readability.
+          var fillMat = new THREE.MeshBasicMaterial({
+            color: 0x0891b2,
+            transparent: true,
+            opacity: 0.08,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          });
+          var fillMesh = new THREE.Mesh(geo, fillMat);
+          fillMesh.matrixAutoUpdate = false;
+          planeGroup.add(fillMesh);
+
+          planePool[i] = { wire: mesh, fill: fillMesh };
+          return planePool[i];
+        }
+
+        function setPlaneMeshTransform(entry, mtx, sx, sz) {
+          var m = new THREE.Matrix4().fromArray(mtx);
+          var s = new THREE.Matrix4().makeScale(sx, 1, sz);
+          var combined = new THREE.Matrix4().multiplyMatrices(m, s);
+          entry.wire.matrix.copy(combined);
+          entry.wire.matrixWorldNeedsUpdate = true;
+          entry.fill.matrix.copy(combined);
+          entry.fill.matrixWorldNeedsUpdate = true;
+          entry.wire.visible = true;
+          entry.fill.visible = true;
+        }
+
+        function hidePlanePool(fromIdx) {
+          for (var i = fromIdx; i < planePool.length; i++) {
+            if (planePool[i]) {
+              planePool[i].wire.visible = false;
+              planePool[i].fill.visible = false;
+            }
+          }
+        }
+
+        // ----- Anchor group holds the satellite -----------------------------
+        var anchorGroup = new THREE.Group();
+        anchorGroup.matrixAutoUpdate = false;
+        anchorGroup.visible = false;
+        scene.add(anchorGroup);
+
+        var satelliteGroup = new THREE.Group();
+        anchorGroup.add(satelliteGroup);
+
+        // Blinking status lamp + bright sphere gizmo.
+        var statusLight = new THREE.PointLight(0x00ffc8, 0.0, 1.5);
+        statusLight.position.set(0, 0.1, 0.4);
+        satelliteGroup.add(statusLight);
+        var statusGizmo = new THREE.Mesh(
+          new THREE.SphereGeometry(0.03, 12, 12),
+          new THREE.MeshBasicMaterial({ color: 0x00ffc8 })
+        );
+        statusGizmo.position.copy(statusLight.position);
+        satelliteGroup.add(statusGizmo);
+
+        // ----- GLB intake pipeline (same chunked base64 protocol) ----------
+        var glbChunks = [];
+        var satNodes = { panelL: null, panelR: null, mirror: null };
+
+        window.__orbResetGlb = function () { glbChunks = []; };
+        window.__orbPushGlbChunk = function (b64) { glbChunks.push(b64); };
+        window.__orbCommitGlb = function () {
+          try {
+            var b64 = glbChunks.join('');
+            glbChunks = [];
+            var bin = atob(b64);
+            var len = bin.length;
+            var buf = new Uint8Array(len);
+            for (var i = 0; i < len; i++) buf[i] = bin.charCodeAt(i);
+
+            var loader = new THREE.GLTFLoader();
+            loader.parse(
+              buf.buffer, '',
+              function (gltf) {
+                var model = gltf.scene;
+                var box = new THREE.Box3().setFromObject(model);
+                var size = box.getSize(new THREE.Vector3());
+                var center = box.getCenter(new THREE.Vector3());
+                var maxDim = Math.max(size.x, size.y, size.z) || 1;
+                // In AR world units are metres. 0.35 m tall satellite is
+                // roughly desk-lamp scale, feels right for tabletop demo.
+                var norm = 0.35 / maxDim;
+                model.position.sub(center.multiplyScalar(norm));
+                model.scale.setScalar(norm);
+                // Hover the craft 0.2 m above the detected surface so it
+                // doesn't clip through the table.
+                model.position.y += 0.2;
+
+                model.traverse(function (obj) {
+                  var n = (obj.name || '').toLowerCase();
+                  if (!satNodes.panelL && (n.indexOf('panel_l') >= 0 || n.indexOf('left') >= 0)) {
+                    satNodes.panelL = obj;
+                  }
+                  if (!satNodes.panelR && (n.indexOf('panel_r') >= 0 || n.indexOf('right') >= 0)) {
+                    satNodes.panelR = obj;
+                  }
+                  if (!satNodes.mirror && (n.indexOf('mirror') >= 0 || n.indexOf('reflect') >= 0)) {
+                    satNodes.mirror = obj;
+                  }
+                });
+
+                satelliteGroup.add(model);
+              },
+              function (err) {
+                window.__orbShowError('GLTF parse: ' + (err && err.message ? err.message : err));
+              }
+            );
+          } catch (e) {
+            window.__orbShowError('commit: ' + (e && e.message ? e.message : e));
+          }
+        };
+
+        // ----- AR Engine bridge ---------------------------------------------
+        // ArkTS pushes matrices each frame. All matrices are column-major
+        // (same convention as THREE.Matrix4.fromArray).
+
+        window.arSetCamera = function (viewArr, projArr) {
+          if (!viewArr || !projArr) return;
+          // Three.js expects camera matrixWorld = inverse(view), and
+          // projectionMatrix directly. viewArr comes from AR Engine as the
+          // view matrix (world -> camera), so invert it for matrixWorld.
+          var v = new THREE.Matrix4().fromArray(viewArr);
+          camera.matrixWorld.copy(v).invert();
+          camera.matrixWorldInverse.copy(v);
+          camera.projectionMatrix.fromArray(projArr);
+          camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+        };
+
+        window.arSetPlanes = function (planesJson) {
+          if (!planesJson) return;
+          var list;
+          try { list = JSON.parse(planesJson); } catch (_e) { return; }
+          var n = list.length;
+          for (var i = 0; i < n; i++) {
+            var p = list[i];
+            var entry = getPlaneMesh(i);
+            setPlaneMeshTransform(entry, p.centerPose, p.extentX, p.extentZ);
+          }
+          hidePlanePool(n);
+        };
+
+        window.arSetAnchor = function (poseArr) {
+          if (!poseArr) {
+            anchorGroup.visible = false;
+            return;
+          }
+          anchorGroup.matrix.fromArray(poseArr);
+          anchorGroup.matrixWorldNeedsUpdate = true;
+          anchorGroup.visible = true;
+        };
+
+        window.arClearAnchor = function () {
+          anchorGroup.visible = false;
+        };
+
+        // ----- Resize --------------------------------------------------------
+        function resize() {
+          var w = canvas.clientWidth || window.innerWidth || 360;
+          var h = canvas.clientHeight || window.innerHeight || 640;
+          renderer.setSize(w, h, false);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // ----- Render loop ---------------------------------------------------
+        function tick() {
+          requestAnimationFrame(tick);
+          var t = performance.now();
+
+          // Idle animation on the anchored satellite.
+          if (satNodes.panelL) satNodes.panelL.rotation.y = Math.sin(t * 0.0006) * 0.25;
+          if (satNodes.panelR) satNodes.panelR.rotation.y = -Math.sin(t * 0.0006) * 0.25;
+          if (satNodes.mirror) satNodes.mirror.rotation.z = Math.sin(t * 0.0012) * 0.15;
+          satelliteGroup.rotation.y += 0.004;
+          satelliteGroup.position.y = Math.sin(t * 0.0013) * 0.015;
+
+          var pulse = 0.5 + 0.5 * Math.sin(t * 0.005);
+          statusLight.intensity = 0.6 + pulse * 1.8;
+          statusGizmo.material.color.setRGB(0, 0.6 + pulse * 0.4, 0.8 + pulse * 0.2);
+
+          renderer.render(scene, camera);
+        }
+        tick();
+
+        window.__orbViewerReady = true;
+      })();
+    </script>
+  </body>
+</html>

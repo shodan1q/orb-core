@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "camera_reason",
+      "value": "用于 AR 模式把 Orb Core 卫星叠加到真实场景"
     }
   ]
 }

@@ -22,7 +22,7 @@ import webview from '@ohos.web.webview';
 import common from '@ohos.app.ability.common';
 import util from '@ohos.util';
 import { BusinessError } from '@ohos.base';
-import { ensureViewerAssets } from '../common/ViewerAssets';
+import { ensureViewerAssets, satelliteViewerUrl } from '../common/ViewerAssets';
 
 const GLB_RAWFILE_PATH: string = 'satellite.glb';
 // Each runJavaScript call has overhead and size limits — 256 kB of base64
@@ -45,8 +45,8 @@ export struct Satellite3D {
   aboutToAppear(): void {
     try {
       const ctx = getContext(this) as common.UIAbilityContext;
-      const viewerPath: string = ensureViewerAssets(ctx);
-      this.srcUrl = 'file://' + viewerPath;
+      const base: string = ensureViewerAssets(ctx);
+      this.srcUrl = satelliteViewerUrl(base);
     } catch (e) {
       const err = e as BusinessError;
       this.bootError = `viewer assets copy failed: ${err.code} ${err.message}`;

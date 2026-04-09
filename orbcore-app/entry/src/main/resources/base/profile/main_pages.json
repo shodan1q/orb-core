@@ -1,6 +1,7 @@
 {
   "src": [
     "pages/Index",
-    "pages/RemoteControl"
+    "pages/RemoteControl",
+    "pages/ARView"
   ]
 }

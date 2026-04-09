@@ -197,6 +197,30 @@ struct RemoteControl {
         .padding({ top: 14, bottom: 10, left: 16, right: 16 })
         .border({ width: { bottom: 1 }, color: Theme.BORDER_HAIR })
 
+        // ---------- AR MODE entry (simple tappable row) ----------
+        // Using a plain Row instead of Button to eliminate any chance of
+        // layout-engine weirdness inside a Button's custom-content slot.
+        Row() {
+          Text('◇   AR MODE   >')
+            .fontSize(12)
+            .fontColor(Theme.VIOLET)
+            .letterSpacing(2)
+            .fontWeight(FontWeight.Medium)
+        }
+        .width('92%')
+        .height(52)
+        .justifyContent(FlexAlign.Center)
+        .backgroundColor('rgba(109,40,217,0.18)')
+        .border({ width: 1, color: 'rgba(167,139,250,0.7)' })
+        .margin({ top: 10 })
+        .onClick(() => {
+          try {
+            router.pushUrl({ url: 'pages/ARView' });
+          } catch (err) {
+            console.error(`pushUrl ARView failed: ${(err as Error).message}`);
+          }
+        })
+
         // ---------- Attitude telemetry strip ----------
         Row() {
           this.LabelValue('PITCH', this.formatDeg(this.pitch), Theme.CYAN_BRIGHT)
@@ -223,8 +247,8 @@ struct RemoteControl {
           Satellite3D({ pitch: this.pitch, roll: this.roll, yaw: this.yaw })
         }
         .width('92%')
-        .height(220)
-        .margin({ top: 14 })
+        .height(180)
+        .margin({ top: 10 })
         .backgroundColor('rgba(3,7,18,0.55)')
         .border({ width: 1, color: Theme.BORDER_DIM })
 
@@ -234,8 +258,8 @@ struct RemoteControl {
           Stack() {
             AttitudeGauge({ pitch: this.pitch, roll: this.roll, yaw: this.yaw })
           }
-          .width(180)
-          .height(180)
+          .width(150)
+          .height(150)
           .border({ width: 1, color: Theme.BORDER_DIM })
           .backgroundColor('rgba(3,7,18,0.55)')
 
@@ -297,13 +321,13 @@ struct RemoteControl {
           }
           .alignItems(HorizontalAlign.Start)
           .layoutWeight(1)
-          .height(180)
+          .height(150)
           .padding({ left: 14, right: 14, top: 10, bottom: 10 })
           .backgroundColor('rgba(3,7,18,0.55)')
           .border({ width: 1, color: Theme.BORDER_DIM })
         }
         .width('92%')
-        .margin({ top: 12 })
+        .margin({ top: 10 })
 
         // ---------- Command buttons ----------
         Row() {
@@ -379,8 +403,8 @@ struct RemoteControl {
         }
         .alignItems(HorizontalAlign.Start)
         .width('92%')
-        .height(92)
-        .margin({ top: 12, bottom: 14 })
+        .height(64)
+        .margin({ top: 10, bottom: 8 })
         .padding(10)
         .backgroundColor('rgba(3,7,18,0.7)')
         .border({ width: 1, color: Theme.BORDER_HAIR })
@@ -388,10 +412,8 @@ struct RemoteControl {
       .width('100%')
       .height('100%')
       // Keep interactive content inside the system safe area so the top
-      // status bar and bottom home-indicator don't overlap it. The
-      // background gradient still reaches the screen edges via
-      // .expandSafeArea() on the sibling Column above.
-      .padding({ top: 40, bottom: 24 })
+      // status bar and bottom home-indicator don't overlap it.
+      .padding({ top: 40, bottom: 28 })
     }
     .width('100%')
     .height('100%')
