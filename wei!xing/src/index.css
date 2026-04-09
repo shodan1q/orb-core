@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-console-bg: #0a0a0c;
+  --color-console-surface: #121214;
+  --color-console-card: #fafaf9;
+  --color-console-accent: #ff4d33;
+  --color-console-accent-dim: rgba(255, 77, 51, 0.15);
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply m-0 min-h-svh bg-[#0a0a0c] text-zinc-300;
+    font-family: var(--font-sans);
+  }
+  #root {
+    @apply min-h-svh w-full max-w-none;
+  }
+}
+
+/* Leaflet inside dark UI */
+.leaflet-container {
+  background: #0d0d10 !important;
+  font-family: inherit;
+}
+.leaflet-control-attribution {
+  @apply bg-black/40 text-[10px] text-zinc-500;
+}
+.leaflet-control-attribution a {
+  @apply text-zinc-400;
+}

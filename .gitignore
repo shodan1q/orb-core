@@ -42,3 +42,12 @@ next-env.d.ts
 
 # local media assets (too large for git, keep out of the monorepo)
 *.mp4
+
+# wei!xing sub-project: ignore build artifacts, deps, and large files
+wei!xing/node_modules/
+wei!xing/dist/
+wei!xing/.git/
+wei!xing/package-lock.json
+wei!xing/.DS_Store
+wei!xing/.vscode/
+*.stl
