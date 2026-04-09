@@ -807,7 +807,7 @@ function Scene() {
       <OrbitPath />
       <GlowOrbitTrail satPosRef={satPosRef} />
       <Satellite position={satPosRef.current} sunDirection={sunDirRef.current} />
-      {/* <SatelliteGlowRing satPosRef={satPosRef} /> */}
+      <SatelliteGlowRing satPosRef={satPosRef} />
       <Trail posRef={satPosRef} />
       <EnergyParticleField satPosRef={satPosRef} sunDirRef={sunDirRef} />
       <Effects satPosRef={satPosRef} sunDirRef={sunDirRef} />
