@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { useOrbStore } from '@/stores/useOrbStore';
+import { sendRemoteAttitude } from '@/hooks/useRemoteLink';
 
 const ControlSatellite = dynamic(() => import('@/components/three/ControlSatellite'), {
   ssr: false,
@@ -84,6 +85,7 @@ function AttitudePanel() {
   const [roll, setRoll] = useState(0);
   const [mode, setMode] = useState<'NADIR' | 'SUN' | 'TARGET' | 'FREE'>('NADIR');
   const [thrust, setThrust] = useState(0);
+  const [expanded, setExpanded] = useState(false);
 
   // HarmonyOS remote station uplink. When the phone is connected, its
   // gyroscope drives the sliders / 3D model in real time; when offline,
@@ -102,6 +104,20 @@ function AttitudePanel() {
     setRoll(attitudeRoll);
     setYaw(wrap(attitudeYaw));
   }, [attitudePitch, attitudeRoll, attitudeYaw, remoteActive]);
+
+  // Stream slider values back through the relay at ~10 Hz so connected
+  // phones continuously mirror the web control-panel state. A single
+  // send-on-change isn't enough because the phone's sensor overwrites
+  // the value within 500 ms if it doesn't keep receiving fresh frames.
+  const attRef = useRef({ pitch: 0, roll: 0, yaw: 0 });
+  attRef.current = { pitch, roll, yaw };
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const a = attRef.current;
+      sendRemoteAttitude(a.pitch, a.roll, a.yaw);
+    }, 100);
+    return () => clearInterval(timer);
+  }, []);
 
   const Slider = ({
     label,
@@ -209,7 +225,53 @@ function AttitudePanel() {
         <div className="absolute bottom-1.5 right-2 text-[8px] font-mono text-gray-500 pointer-events-none">
           拖动旋转视角
         </div>
+        {/* Expand button */}
+        <button
+          onClick={() => setExpanded(true)}
+          className="absolute top-1.5 right-2 z-10 px-1.5 py-0.5 text-[8px] font-mono text-cyan-400/80 border border-cyan-500/30 bg-black/50 hover:border-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/15 transition-colors tracking-wider"
+        >
+          ⛶ EXPAND
+        </button>
       </div>
+
+      {/* Fullscreen 3D model overlay */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex flex-col"
+          onClick={() => setExpanded(false)}
+        >
+          <div
+            className="flex-1 relative m-4 border border-cyan-500/25 bg-gradient-to-b from-[#020812] to-[#000408] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ControlSatellite pitch={pitch} yaw={yaw} roll={roll} thrust={thrust} />
+            {/* HUD 角标 */}
+            <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-cyan-400/60 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-cyan-400/60 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-cyan-400/60 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-cyan-400/60 pointer-events-none" />
+            <div className="absolute top-3 left-4 text-[10px] font-mono text-cyan-400/80 tracking-widest pointer-events-none">
+              ORB-CORE · 3D MODEL · FULLSCREEN
+            </div>
+            {/* Attitude HUD overlay */}
+            <div className="absolute bottom-3 left-4 text-[10px] font-mono text-cyan-300/70 tracking-wider pointer-events-none space-y-0.5">
+              <div>PITCH <span className="text-cyan-200 tabular-nums">{pitch > 0 ? '+' : ''}{pitch.toFixed(1)}°</span></div>
+              <div>YAW&nbsp;&nbsp; <span className="text-cyan-200 tabular-nums">{yaw > 0 ? '+' : ''}{yaw.toFixed(1)}°</span></div>
+              <div>ROLL&nbsp; <span className="text-cyan-200 tabular-nums">{roll > 0 ? '+' : ''}{roll.toFixed(1)}°</span></div>
+            </div>
+            <div className="absolute bottom-3 right-4 text-[10px] font-mono text-gray-500 pointer-events-none">
+              拖动旋转视角 · 点击空白处关闭
+            </div>
+            {/* Close button */}
+            <button
+              onClick={() => setExpanded(false)}
+              className="absolute top-3 right-4 z-10 px-2 py-1 text-[10px] font-mono text-cyan-400 border border-cyan-500/30 bg-black/60 hover:border-cyan-400 hover:bg-cyan-500/15 transition-colors tracking-wider"
+            >
+              CLOSE ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2 mt-2">
         <button

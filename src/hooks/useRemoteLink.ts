@@ -16,8 +16,12 @@
 // ws relay on port 8882 so the phone and the dashboard can meet on the same
 // LAN without a Next.js server route.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useOrbStore } from '@/stores/useOrbStore';
+
+// Module-level WS ref so sendRemoteAttitude can reach the live socket
+// without requiring the hook caller to thread it through props.
+let activeWs: WebSocket | null = null;
 
 type AttitudeMessage = {
   type: 'attitude';
@@ -71,8 +75,12 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
         return;
       }
 
-      ws.onopen = () => setRemoteLink('connected', 'link established');
+      ws.onopen = () => {
+        activeWs = ws;
+        setRemoteLink('connected', 'link established');
+      };
       ws.onclose = () => {
+        activeWs = null;
         setRemoteLink('idle', 'link closed');
         scheduleRetry();
       };
@@ -120,7 +128,25 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
       cancelled = true;
       if (retryHandle !== null) window.clearTimeout(retryHandle);
       if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+      activeWs = null;
       setRemoteLink('idle', 'disposed');
     };
   }, [url, enabled, onCommand, setAttitude, setRemoteLink]);
+}
+
+/**
+ * Send an attitude frame from the web dashboard back through the relay
+ * so connected phones can mirror the control-panel state.
+ */
+export function sendRemoteAttitude(pitch: number, roll: number, yaw: number): void {
+  if (!activeWs || activeWs.readyState !== WebSocket.OPEN) return;
+  const msg = JSON.stringify({
+    type: 'attitude',
+    pitch: +pitch.toFixed(2),
+    roll: +roll.toFixed(2),
+    yaw: +yaw.toFixed(2),
+    ts: Date.now(),
+    origin: 'web',
+  });
+  activeWs.send(msg);
 }

@@ -33,12 +33,12 @@ function ControlButton() {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.6, duration: 0.5 }}
       onClick={() => setShow(true)}
-      className="absolute top-16 left-5 z-20 group flex items-center gap-2 px-3 py-2 w-[155px] border border-cyan-500/30 bg-black/40 backdrop-blur-sm hover:border-cyan-400 hover:bg-cyan-500/10 transition-colors"
+      className="absolute top-16 left-5 z-20 group flex items-center gap-3 px-4 py-3 w-[185px] border border-cyan-500/30 bg-black/40 backdrop-blur-sm hover:border-cyan-400 hover:bg-cyan-500/10 transition-colors"
       style={{ boxShadow: '0 0 20px rgba(34,211,238,0.08)' }}
       title="卫星控制台"
     >
       {/* 小图标: 卫星 */}
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-cyan-300 group-hover:text-cyan-100 flex-shrink-0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-cyan-300 group-hover:text-cyan-100 flex-shrink-0">
         <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.2" />
         <rect x="3" y="10" width="6" height="4" stroke="currentColor" strokeWidth="1.2" />
         <rect x="15" y="10" width="6" height="4" stroke="currentColor" strokeWidth="1.2" />
@@ -48,10 +48,10 @@ function ControlButton() {
         <line x1="12" y1="14.5" x2="12" y2="17" stroke="currentColor" strokeWidth="1.2" />
       </svg>
       <div className="text-left leading-tight">
-        <div className="text-[10px] font-mono text-cyan-300 group-hover:text-cyan-100 tracking-widest">
+        <div className="text-[12px] font-mono text-cyan-300 group-hover:text-cyan-100 tracking-widest">
           SAT CTRL
         </div>
-        <div className="text-[8px] font-mono text-gray-500 tracking-wider">
+        <div className="text-[9px] font-mono text-gray-500 tracking-wider">
           卫星控制台
         </div>
       </div>
@@ -65,25 +65,25 @@ function PovButton() {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.75, duration: 0.5 }}
-      className="absolute top-[116px] left-5 z-20"
+      className="absolute top-[124px] left-5 z-20"
     >
       <Link
         href="/pov"
-        className="group flex items-center gap-2 px-3 py-2 w-[155px] border border-violet-500/30 bg-black/40 backdrop-blur-sm hover:border-violet-400 hover:bg-violet-500/10 transition-colors"
+        className="group flex items-center gap-3 px-4 py-3 w-[185px] border border-violet-500/30 bg-black/40 backdrop-blur-sm hover:border-violet-400 hover:bg-violet-500/10 transition-colors"
         style={{ boxShadow: '0 0 20px rgba(167,139,250,0.08)' }}
         title="卫星第一视角"
       >
         {/* 小图标: 相机/眼睛 */}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-violet-300 group-hover:text-violet-100 flex-shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-violet-300 group-hover:text-violet-100 flex-shrink-0">
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.2" />
           <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.2" />
           <circle cx="12" cy="12" r="1" fill="currentColor" />
         </svg>
         <div className="text-left leading-tight">
-          <div className="text-[10px] font-mono text-violet-300 group-hover:text-violet-100 tracking-widest">
+          <div className="text-[12px] font-mono text-violet-300 group-hover:text-violet-100 tracking-widest">
             POV VIEW
           </div>
-          <div className="text-[8px] font-mono text-gray-500 tracking-wider">
+          <div className="text-[9px] font-mono text-gray-500 tracking-wider">
             卫星第一视角
           </div>
         </div>

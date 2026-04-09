@@ -38,6 +38,10 @@ class RemoteClientImpl {
   private lastSendTs: number = 0;
   private sendIntervalMs: number = 33; // ~30 Hz stream to the relay
   private url: string = 'ws://172.20.10.3:8882';
+  // When the web dashboard sends attitude, we suppress local sensor
+  // updates for a short window so the web values aren't immediately
+  // overwritten by the next gyro frame.
+  private remoteOverrideUntil: number = 0;
 
   private stateListeners: StateListener[] = [];
   private attitudeListeners: AttitudeListener[] = [];
@@ -113,6 +117,10 @@ class RemoteClientImpl {
   }
 
   private handleOrientation(data: sensor.OrientationResponse): void {
+    // If the web dashboard recently pushed attitude values, suppress
+    // sensor updates so the phone UI stays in sync with the sliders.
+    if (Date.now() < this.remoteOverrideUntil) return;
+
     // HarmonyOS ORIENTATION returns radians: alpha (z), beta (x), gamma (y).
     const toDeg = 180 / Math.PI;
     const rawPitch = data.beta * toDeg;
@@ -162,7 +170,8 @@ class RemoteClientImpl {
       this.emitState('error', err ? err.message : 'unknown error');
     });
     this.ws.on('message', (_err: BusinessError, value: string | ArrayBuffer) => {
-      if (typeof value === 'string') this.log(`<- ${value}`);
+      if (typeof value !== 'string') return;
+      this.handleIncoming(value);
     });
 
     try {
@@ -235,6 +244,31 @@ class RemoteClientImpl {
       this.ws.send(payload);
     } catch (_e) {
       // swallow — connection state listener will surface a more useful error.
+    }
+  }
+
+  // ---------- incoming message handling ----------
+
+  private handleIncoming(raw: string): void {
+    try {
+      const msg: Record<string, Object> = JSON.parse(raw);
+      if (msg['type'] === 'attitude') {
+        const incoming: Attitude = {
+          pitch: Number(msg['pitch']) || 0,
+          roll: Number(msg['roll']) || 0,
+          yaw: Number(msg['yaw']) || 0,
+        };
+        // Update local attitude from the web dashboard so the phone UI
+        // mirrors the control-panel state. Suppress the local sensor for
+        // 500 ms so the next gyro frame doesn't immediately overwrite.
+        this.remoteOverrideUntil = Date.now() + 500;
+        this.emitAttitude(incoming);
+        this.log(`<- attitude P${incoming.pitch.toFixed(1)} R${incoming.roll.toFixed(1)} Y${incoming.yaw.toFixed(1)}`);
+      } else {
+        this.log(`<- ${raw}`);
+      }
+    } catch (_e) {
+      this.log(`<- (parse error) ${raw.substring(0, 80)}`);
     }
   }
 

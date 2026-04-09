@@ -36,10 +36,10 @@ export default function RemoteLinkBadge() {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.9, duration: 0.5 }}
-      className="absolute top-[172px] left-5 z-20 w-[155px]"
+      className="absolute top-[188px] left-5 z-20 w-[185px]"
     >
       <div
-        className={`border bg-black/40 backdrop-blur-sm px-3 py-2 ${STATE_COLOR[state] ?? STATE_COLOR.idle}`}
+        className={`border bg-black/40 backdrop-blur-sm px-4 py-3 ${STATE_COLOR[state] ?? STATE_COLOR.idle}`}
         style={{ boxShadow: '0 0 20px rgba(34,211,238,0.06)' }}
       >
         <div className="flex items-center gap-2">
@@ -54,11 +54,11 @@ export default function RemoteLinkBadge() {
                 : 'bg-gray-500'
             }`}
           />
-          <div className="text-[10px] font-mono tracking-widest">
+          <div className="text-[12px] font-mono tracking-widest">
             HM REMOTE · {STATE_LABEL[state] ?? 'STANDBY'}
           </div>
         </div>
-        <div className="text-[8px] font-mono text-gray-500 tracking-wider mt-1 truncate">
+        <div className="text-[9px] font-mono text-gray-500 tracking-wider mt-1 truncate">
           {detail || 'waiting for handset'}
         </div>
         <AnimatePresence>
@@ -67,7 +67,7 @@ export default function RemoteLinkBadge() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-2 grid grid-cols-3 gap-1 text-[8px] font-mono text-cyan-300"
+              className="mt-2 grid grid-cols-3 gap-1 text-[9px] font-mono text-cyan-300"
             >
               <div>P{pitch.toFixed(0).padStart(3, ' ')}</div>
               <div>R{roll.toFixed(0).padStart(3, ' ')}</div>
