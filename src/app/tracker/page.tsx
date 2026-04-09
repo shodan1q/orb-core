@@ -356,7 +356,8 @@ export default function TrackerPage() {
     (p: { x: number; y: number }, s: number) => {
       // 3x horizontal tiling: allow pan up to ±w*s horizontally
       const maxX = mapSize.w * s;
-      const maxY = (mapSize.h * (s - 1)) / 2 + viewport.h * 0.3;
+      // Vertically: strict — scaled map must always cover the viewport
+      const maxY = Math.max(0, (mapSize.h * s - viewport.h) / 2);
       return {
         x: Math.max(-maxX, Math.min(maxX, p.x)),
         y: Math.max(-maxY, Math.min(maxY, p.y)),
