@@ -5,6 +5,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 const XIAOZHI_WS_URL =
   'wss://api.xiaozhi.me/mcp/?token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzOTEzMiwiYWdlbnRJZCI6MTY4NTY1NywiZW5kcG9pbnRJZCI6ImFnZW50XzE2ODU2NTciLCJwdXJwb3NlIjoibWNwLWVuZHBvaW50IiwiaWF0IjoxNzc1NTc4NjMyLCJleHAiOjE4MDcxMzYyMzJ9.DF8QMXrUZho08bDKKeRpane2K8y3HhrcoDYMR73E5tJ21NN3qnnH4erBYLCaEGYbJVA9mx_IDvR9--oCyDJTWQ';
 
+const RELAY_WS_URL =
+  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_REMOTE_WS_URL) ||
+  'ws://localhost:8882';
+
 const PROTOCOL_VERSION = '2024-11-05';
 
 let _uidSeq = 0;
@@ -59,6 +63,97 @@ const TOOLS = [
     description: '清空网页上的所有对话消息。',
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'take_photo',
+    description:
+      '命令卫星拍照。卫星会调整姿态对准目标并拍摄一张太空照片，Web界面会自动进入拍照模式并展示结果。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        target_lat: {
+          type: 'number',
+          description: '目标纬度（可选），例如 39.9 表示北京',
+        },
+        target_lng: {
+          type: 'number',
+          description: '目标经度（可选），例如 116.4 表示北京',
+        },
+      },
+    },
+  },
+  {
+    name: 'reflect_sunlight',
+    description:
+      '启动卫星太阳光反射模式，持续15秒。反射镜会将阳光定向反射到地面指定位置。Web界面会自动显示反射光束效果。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        intensity: {
+          type: 'number',
+          description: '反射强度 0-1，默认 0.8',
+        },
+        target_lat: {
+          type: 'number',
+          description: '目标纬度（可选）',
+        },
+        target_lng: {
+          type: 'number',
+          description: '目标经度（可选）',
+        },
+      },
+    },
+  },
+  {
+    name: 'set_attitude',
+    description:
+      '设置卫星姿态角度。控制卫星的俯仰(pitch)、横滚(roll)和偏航(yaw)，Web界面上的卫星3D模型会实时旋转到对应角度。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        pitch: {
+          type: 'number',
+          description: '俯仰角，范围 -180 到 180 度',
+        },
+        roll: {
+          type: 'number',
+          description: '横滚角，范围 -180 到 180 度',
+        },
+        yaw: {
+          type: 'number',
+          description: '偏航角，范围 0 到 360 度',
+        },
+      },
+      required: ['pitch', 'roll', 'yaw'],
+    },
+  },
+  {
+    name: 'get_satellite_status',
+    description:
+      '获取卫星完整状态，包括当前位置（经纬度、海拔）、速度、能量、姿态角度等全部遥测数据。',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'navigate_page',
+    description:
+      '导航到星核控制平台的不同页面。可用页面：dashboard（主控台）、pov（卫星第一视角）、tracker（卫星追踪地图）、control（卫星控制台面板）、peak（地空能源系统）。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        page: {
+          type: 'string',
+          enum: ['dashboard', 'pov', 'tracker', 'control', 'peak'],
+          description: '要导航到的页面',
+        },
+      },
+      required: ['page'],
+    },
+  },
+  {
+    name: 'point_to_sun',
+    description:
+      '命令卫星对准太阳方向。卫星会自动调整姿态朝向太阳，用于太阳能充电或阳光反射准备。Web界面上的卫星会转向太阳。',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ] as const;
 
 export default function XiaoZhiPage() {
@@ -67,6 +162,7 @@ export default function XiaoZhiPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [showLogs, setShowLogs] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
+  const relayWsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<number | null>(null);
   const manualCloseRef = useRef(false);
 
@@ -80,6 +176,71 @@ export default function XiaoZhiPage() {
     });
   }, []);
 
+  // ── Relay WebSocket (to dashboard) ──────────────────────────────────
+  const sendToRelay = useCallback((obj: unknown) => {
+    const ws = relayWsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify(obj));
+  }, []);
+
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let cancelled = false;
+    let retryHandle: number | null = null;
+
+    const connectRelay = () => {
+      if (cancelled) return;
+      try {
+        ws = new WebSocket(RELAY_WS_URL);
+      } catch {
+        return;
+      }
+      relayWsRef.current = ws;
+
+      ws.onopen = () => log('info', `relay connected → ${RELAY_WS_URL}`);
+      ws.onclose = () => {
+        relayWsRef.current = null;
+        if (!cancelled) retryHandle = window.setTimeout(connectRelay, 3000);
+      };
+      ws.onmessage = (ev) => {
+        // Listen for status_response from the dashboard
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'status_response') {
+            // Store temporarily for pending status request
+            pendingStatusResolve.current?.(msg);
+            pendingStatusResolve.current = null;
+          }
+        } catch { /* ignore */ }
+      };
+    };
+
+    connectRelay();
+    return () => {
+      cancelled = true;
+      if (retryHandle) window.clearTimeout(retryHandle);
+      ws?.close();
+    };
+  }, [log]);
+
+  const pendingStatusResolve = useRef<((value: unknown) => void) | null>(null);
+
+  const requestStatus = useCallback((): Promise<unknown> => {
+    return new Promise((resolve) => {
+      pendingStatusResolve.current = resolve;
+      const reqId = uid();
+      sendToRelay({ type: 'status_request', id: reqId, origin: 'xiaozhi-mcp' });
+      // Timeout after 3s
+      setTimeout(() => {
+        if (pendingStatusResolve.current === resolve) {
+          pendingStatusResolve.current = null;
+          resolve(null);
+        }
+      }, 3000);
+    });
+  }, [sendToRelay]);
+
+  // ── XiaoZhi MCP WebSocket ──────────────────────────────────────────
   const send = useCallback(
     (obj: unknown) => {
       const ws = wsRef.current;
@@ -102,7 +263,7 @@ export default function XiaoZhiPage() {
           result: {
             protocolVersion: PROTOCOL_VERSION,
             capabilities: { tools: {} },
-            serverInfo: { name: 'orb-core-xiaozhi-bridge', version: '0.1.0' },
+            serverInfo: { name: 'orb-core-xiaozhi-bridge', version: '0.2.0' },
           },
         });
         return;
@@ -122,35 +283,138 @@ export default function XiaoZhiPage() {
         const name = params?.name as string;
         const args = (params?.arguments ?? {}) as Record<string, unknown>;
 
+        // ── push_message ──
         if (name === 'push_message') {
-          const role = (args.role === 'assistant' ? 'assistant' : 'user') as
-            | 'user'
-            | 'assistant';
+          const role = (args.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant';
           const text = String(args.text ?? '');
-          setMessages((m) => [
-            ...m,
-            { id: uid(), role, text, ts: Date.now() },
-          ]);
+          setMessages((m) => [...m, { id: uid(), role, text, ts: Date.now() }]);
+          send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'ok' }], isError: false } });
+          return;
+        }
+
+        // ── clear_messages ──
+        if (name === 'clear_messages') {
+          setMessages([]);
+          send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'cleared' }], isError: false } });
+          return;
+        }
+
+        // ── take_photo ──
+        if (name === 'take_photo') {
+          const lat = args.target_lat as number | undefined;
+          const lng = args.target_lng as number | undefined;
+          // Send command through relay to dashboard
+          sendToRelay({
+            type: 'command',
+            action: 'take_photo',
+            ...(lat != null && lng != null ? { lat, lng } : {}),
+            origin: 'xiaozhi-mcp',
+          });
+          // Also request a capture
+          sendToRelay({
+            type: 'capture_request',
+            id: uid(),
+            origin: 'xiaozhi-mcp',
+            ...(lat != null && lng != null ? { target_lat: lat, target_lng: lng } : {}),
+          });
+          const posInfo = lat != null && lng != null ? `目标坐标: ${lat}, ${lng}` : '当前视角';
           send({
-            jsonrpc: '2.0',
-            id,
-            result: {
-              content: [{ type: 'text', text: 'ok' }],
-              isError: false,
-            },
+            jsonrpc: '2.0', id,
+            result: { content: [{ type: 'text', text: `拍照指令已发送。${posInfo}。Web界面已进入拍照模式。` }], isError: false },
           });
           return;
         }
 
-        if (name === 'clear_messages') {
-          setMessages([]);
+        // ── reflect_sunlight ──
+        if (name === 'reflect_sunlight') {
+          const intensity = (args.intensity as number) ?? 0.8;
+          const lat = args.target_lat as number | undefined;
+          const lng = args.target_lng as number | undefined;
+          sendToRelay({
+            type: 'command',
+            action: 'reflect',
+            intensity,
+            ...(lat != null && lng != null ? { lat, lng } : {}),
+            origin: 'xiaozhi-mcp',
+          });
           send({
-            jsonrpc: '2.0',
-            id,
-            result: {
-              content: [{ type: 'text', text: 'cleared' }],
-              isError: false,
-            },
+            jsonrpc: '2.0', id,
+            result: { content: [{ type: 'text', text: `太阳光反射已启动，强度 ${(intensity * 100).toFixed(0)}%，持续15秒。Web界面已显示反射光束。` }], isError: false },
+          });
+          return;
+        }
+
+        // ── set_attitude ──
+        if (name === 'set_attitude') {
+          const pitch = (args.pitch as number) ?? 0;
+          const roll = (args.roll as number) ?? 0;
+          const yaw = (args.yaw as number) ?? 0;
+          sendToRelay({
+            type: 'attitude',
+            pitch,
+            roll,
+            yaw,
+            ts: Date.now(),
+            origin: 'xiaozhi-mcp',
+          });
+          send({
+            jsonrpc: '2.0', id,
+            result: { content: [{ type: 'text', text: `卫星姿态已调整: Pitch=${pitch.toFixed(1)}, Roll=${roll.toFixed(1)}, Yaw=${yaw.toFixed(1)}` }], isError: false },
+          });
+          return;
+        }
+
+        // ── get_satellite_status ──
+        if (name === 'get_satellite_status') {
+          requestStatus().then((statusData) => {
+            if (statusData) {
+              send({
+                jsonrpc: '2.0', id,
+                result: { content: [{ type: 'text', text: JSON.stringify(statusData) }], isError: false },
+              });
+            } else {
+              send({
+                jsonrpc: '2.0', id,
+                result: { content: [{ type: 'text', text: '状态请求超时，Dashboard 可能未连接。' }], isError: false },
+              });
+            }
+          });
+          return;
+        }
+
+        // ── navigate_page ──
+        if (name === 'navigate_page') {
+          const page = args.page as string;
+          sendToRelay({
+            type: 'command',
+            action: 'navigate',
+            page,
+            origin: 'xiaozhi-mcp',
+          } as unknown);
+          const pageNames: Record<string, string> = {
+            dashboard: '主控台',
+            pov: '卫星第一视角',
+            tracker: '卫星追踪地图',
+            control: '卫星控制台',
+            peak: '地空能源系统',
+          };
+          send({
+            jsonrpc: '2.0', id,
+            result: { content: [{ type: 'text', text: `已导航到${pageNames[page] || page}页面。` }], isError: false },
+          });
+          return;
+        }
+
+        // ── point_to_sun ──
+        if (name === 'point_to_sun') {
+          sendToRelay({
+            type: 'command',
+            action: 'point_to_sun',
+            origin: 'xiaozhi-mcp',
+          });
+          send({
+            jsonrpc: '2.0', id,
+            result: { content: [{ type: 'text', text: '卫星正在调整姿态对准太阳方向。' }], isError: false },
           });
           return;
         }
@@ -170,7 +434,7 @@ export default function XiaoZhiPage() {
         error: { code: -32601, message: `Method not found: ${method}` },
       });
     },
-    [send]
+    [send, sendToRelay, requestStatus]
   );
 
   const connect = useCallback(() => {
@@ -206,8 +470,6 @@ export default function XiaoZhiPage() {
       if (msg.method) {
         if (msg.id !== undefined) {
           handleRequest(msg as Required<typeof msg>);
-        } else {
-          // notification — nothing to reply, but log e.g. notifications/initialized
         }
       }
     };
@@ -263,7 +525,7 @@ export default function XiaoZhiPage() {
               XIAOZHI · MCP BRIDGE
             </h1>
             <p className="text-[11px] text-zinc-500 mt-1">
-              小智 MCP 端点桥 — 通过 push_message 工具把对话同步到网页
+              小艺 OpenClaw 端点桥 — 语音控制卫星姿态、拍照、反射阳光、页面导航
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -308,10 +570,10 @@ export default function XiaoZhiPage() {
           <div className="p-4 max-h-[55vh] overflow-y-auto space-y-3">
             {messages.length === 0 && (
               <div className="text-[11px] text-zinc-600 text-center py-12">
-                等待小智推送消息…
+                等待小艺推送消息…
                 <br />
                 <span className="text-zinc-700">
-                  对小智说点什么，看看是否会调用 push_message 工具
+                  对小艺说"帮我拍张照片"、"打开卫星追踪"、"调整卫星姿态"试试
                 </span>
               </div>
             )}
@@ -328,7 +590,7 @@ export default function XiaoZhiPage() {
                   }`}
                 >
                   <div className="text-[9px] tracking-widest opacity-60 mb-1">
-                    {m.role === 'user' ? 'USER' : 'XIAOZHI'} ·{' '}
+                    {m.role === 'user' ? 'USER' : 'XIAOYI'} ·{' '}
                     {new Date(m.ts).toLocaleTimeString()}
                   </div>
                   <div className="whitespace-pre-wrap break-words">{m.text}</div>

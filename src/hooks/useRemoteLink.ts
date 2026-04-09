@@ -33,11 +33,12 @@ type AttitudeMessage = {
 
 type CommandMessage = {
   type: 'command';
-  action: 'take_photo' | 'reflect' | 'status' | 'set_target';
+  action: 'take_photo' | 'reflect' | 'status' | 'set_target' | 'navigate' | 'point_to_sun';
   lat?: number;
   lng?: number;
   intensity?: number;
   origin?: string;
+  page?: string;
 };
 
 type CaptureRequest = {
@@ -57,11 +58,12 @@ type StatusRequest = {
 type RemoteMessage = AttitudeMessage | CommandMessage | CaptureRequest | StatusRequest;
 
 export type RemoteCommand = CommandMessage['action'];
+export type RemoteCommandMessage = CommandMessage;
 
 interface Options {
   url?: string;
   enabled?: boolean;
-  onCommand?: (action: RemoteCommand) => void;
+  onCommand?: (action: RemoteCommand, msg?: CommandMessage) => void;
 }
 
 const DEFAULT_URL =
@@ -203,18 +205,37 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
             smoothed.current.yaw
           );
         } else if (msg.type === 'command') {
+          const store = useOrbStore.getState();
           // Handle set_target from MCP
           if (msg.action === 'set_target' && msg.lat != null && msg.lng != null) {
-            const store = useOrbStore.getState();
             store.setTarget(msg.lat, msg.lng);
           }
-          onCommand?.(msg.action);
+          // Handle take_photo with coordinates
+          if (msg.action === 'take_photo' && msg.lat != null && msg.lng != null) {
+            store.setTarget(msg.lat, msg.lng);
+          }
+          // Handle reflect with coordinates and intensity
+          if (msg.action === 'reflect') {
+            if (msg.lat != null && msg.lng != null) store.setTarget(msg.lat, msg.lng);
+            store.setReflection(true, msg.intensity ?? 0.8);
+            store.setPhase('reflection-sequence');
+            store.consumeEnergy(100);
+            setTimeout(() => {
+              store.setReflection(false);
+              store.setPhase('orbiting');
+            }, 15000);
+          }
+          // Handle point_to_sun — set attitude to face sun direction
+          if (msg.action === 'point_to_sun') {
+            store.setAttitude(0, 0, 180); // face sun (opposite to nadir)
+          }
+          onCommand?.(msg.action, msg as CommandMessage);
         } else if (msg.type === 'capture_request') {
           // MCP Server 请求截图 — 截取 3D canvas 并回传
-          handleCaptureRequest(ws, msg as CaptureRequest);
+          if (ws) handleCaptureRequest(ws, msg as CaptureRequest);
         } else if (msg.type === 'status_request') {
           // MCP Server 请求完整状态
-          handleStatusRequest(ws, msg as StatusRequest);
+          if (ws) handleStatusRequest(ws, msg as StatusRequest);
         }
       };
     };

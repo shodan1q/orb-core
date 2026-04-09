@@ -10,6 +10,7 @@ import LaunchOverlay from '@/components/ui/LaunchOverlay';
 import PhotoViewer from '@/components/ui/PhotoViewer';
 import ControlPanel from '@/components/ui/ControlPanel';
 import RemoteLinkBadge from '@/components/ui/RemoteLinkBadge';
+import { useRouter } from 'next/navigation';
 import { useOrbStore } from '@/stores/useOrbStore';
 import { useRemoteLink } from '@/hooks/useRemoteLink';
 
@@ -93,18 +94,42 @@ function PovButton() {
 }
 
 export default function Home() {
+  const router = useRouter();
   const setShowPhotoViewer = useOrbStore((s) => s.setShowPhotoViewer);
   const setReflection = useOrbStore((s) => s.setReflection);
   const setShowControlPanel = useOrbStore((s) => s.setShowControlPanel);
+  const setPhase = useOrbStore((s) => s.setPhase);
+  const consumeEnergy = useOrbStore((s) => s.consumeEnergy);
 
   // Open a WebSocket uplink to the HarmonyOS orbcore-app ground station.
   // Attitude messages drive satellite rotation (see Satellite.tsx); commands
   // trigger the same UI affordances as the on-screen control panel.
   useRemoteLink({
-    onCommand: (action) => {
-      if (action === 'take_photo') setShowPhotoViewer(true);
-      else if (action === 'reflect') setReflection(true, 0.9);
-      else if (action === 'status') setShowControlPanel(true);
+    onCommand: (action, msg) => {
+      if (action === 'take_photo') {
+        setShowPhotoViewer(true);
+        setPhase('photo-sequence');
+        consumeEnergy(50);
+        setTimeout(() => setPhase('orbiting'), 8000);
+      } else if (action === 'reflect') {
+        // reflection is already handled in useRemoteLink hook
+      } else if (action === 'status') {
+        setShowControlPanel(true);
+      } else if (action === 'navigate' && msg?.page) {
+        const pageRoutes: Record<string, string> = {
+          dashboard: '/',
+          pov: '/pov',
+          tracker: '/tracker',
+          control: '/', // opens control panel on dashboard
+          peak: '/peak',
+        };
+        const route = pageRoutes[msg.page];
+        if (msg.page === 'control') {
+          setShowControlPanel(true);
+        } else if (route) {
+          router.push(route);
+        }
+      }
     },
   });
 
