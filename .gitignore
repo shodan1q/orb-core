@@ -40,6 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# AI tool config
+CLAUDE.md
+AGENTS.md
+.cursorrules
+.cursor/
+
 # local media assets (too large for git, keep out of the monorepo)
 *.mp4
 
