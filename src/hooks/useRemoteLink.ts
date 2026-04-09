@@ -33,10 +33,28 @@ type AttitudeMessage = {
 
 type CommandMessage = {
   type: 'command';
-  action: 'take_photo' | 'reflect' | 'status';
+  action: 'take_photo' | 'reflect' | 'status' | 'set_target';
+  lat?: number;
+  lng?: number;
+  intensity?: number;
+  origin?: string;
 };
 
-type RemoteMessage = AttitudeMessage | CommandMessage;
+type CaptureRequest = {
+  type: 'capture_request';
+  id: string;
+  origin: string;
+  target_lat?: number;
+  target_lng?: number;
+};
+
+type StatusRequest = {
+  type: 'status_request';
+  id: string;
+  origin: string;
+};
+
+type RemoteMessage = AttitudeMessage | CommandMessage | CaptureRequest | StatusRequest;
 
 export type RemoteCommand = CommandMessage['action'];
 
@@ -49,6 +67,76 @@ interface Options {
 const DEFAULT_URL =
   (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_REMOTE_WS_URL) ||
   'ws://localhost:8882';
+
+// Handle capture_request from MCP Server — grab the 3D canvas and send it back
+function handleCaptureRequest(ws: WebSocket, req: CaptureRequest) {
+  const store = useOrbStore.getState();
+
+  // If target coordinates specified, set them first
+  if (req.target_lat != null && req.target_lng != null) {
+    store.setTarget(req.target_lat, req.target_lng);
+  }
+
+  // Capture the Three.js canvas
+  let image: string | null = null;
+  const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+  if (canvas) {
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      image = dataUrl.replace(/^data:image\/png;base64,/, '');
+      store.setLastPhoto(dataUrl);
+    } catch {
+      // canvas tainted or unavailable
+    }
+  }
+
+  const response = JSON.stringify({
+    type: 'capture_response',
+    id: req.id,
+    image,
+    position: {
+      lat: store.satelliteLat,
+      lng: store.satelliteLng,
+      alt: store.satelliteAlt,
+      velocity: store.velocity,
+    },
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(response);
+  }
+}
+
+// Handle status_request from MCP Server — return full satellite state
+function handleStatusRequest(ws: WebSocket, req: StatusRequest) {
+  const s = useOrbStore.getState();
+
+  const response = JSON.stringify({
+    type: 'status_response',
+    id: req.id,
+    position: {
+      lat: s.satelliteLat,
+      lng: s.satelliteLng,
+      alt: s.satelliteAlt,
+      velocity: s.velocity,
+    },
+    energy: { current: s.energy, max: s.maxEnergy },
+    attitude: {
+      pitch: s.attitudePitch,
+      roll: s.attitudeRoll,
+      yaw: s.attitudeYaw,
+    },
+    ground_link: s.remoteLinkState,
+    reflection: { active: s.reflectionActive, intensity: s.reflectionIntensity },
+    phase: s.phase,
+    target:
+      s.targetLat !== null ? { lat: s.targetLat, lng: s.targetLng } : null,
+  });
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(response);
+  }
+}
 
 export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) {
   const setAttitude = useOrbStore((s) => s.setAttitude);
@@ -115,7 +203,18 @@ export function useRemoteLink({ url, enabled = true, onCommand }: Options = {}) 
             smoothed.current.yaw
           );
         } else if (msg.type === 'command') {
+          // Handle set_target from MCP
+          if (msg.action === 'set_target' && msg.lat != null && msg.lng != null) {
+            const store = useOrbStore.getState();
+            store.setTarget(msg.lat, msg.lng);
+          }
           onCommand?.(msg.action);
+        } else if (msg.type === 'capture_request') {
+          // MCP Server 请求截图 — 截取 3D canvas 并回传
+          handleCaptureRequest(ws, msg as CaptureRequest);
+        } else if (msg.type === 'status_request') {
+          // MCP Server 请求完整状态
+          handleStatusRequest(ws, msg as StatusRequest);
         }
       };
     };
