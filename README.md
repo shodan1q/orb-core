@@ -4,6 +4,8 @@
 
 ![星核-星翼 S1 个人微卫星](docs/images/satellite-blueprint.png)
 
+![产品全景](docs/images/product-overview.png)
+
 ---
 
 ## 我们的题目
@@ -40,6 +42,8 @@
 - **个人卫星控制台**：星核中面向单颗卫星的专业操控界面，提供实时遥测、姿态控制、卫星视角直播、地面轨迹投影四合一的工作台，用户在这里精确操控自己的星翼卫星。
 
 关于星翼 S1 卫星的详细设计参数与技术规格，请参阅 [星核-星翼 S1 个人卫星说明书](docs/星核-星翼%20S1%20个人卫星说明书.pdf)。
+
+![星翼 S1 技术规格](docs/images/satellite-spec-sheet.png)
 
 ### 数据来源
 
@@ -172,7 +176,7 @@
 
 ## 加入我们
 
-![社群二维码](docs/images/qrcode-community.jpg)
+![星核-星翼 S1 海报](docs/images/satellite-poster.png)
 
 Kickstarter 众筹发射计划即将启动，扫码加入社群，见证第一颗民间 AI 卫星的诞生。
 
