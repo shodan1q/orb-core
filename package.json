@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "relay": "node scripts/remote-relay.mjs"
+    "relay": "node scripts/remote-relay.mjs",
+    "mcp": "node scripts/mcp-server.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

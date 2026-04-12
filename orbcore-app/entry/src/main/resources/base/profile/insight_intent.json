@@ -1,0 +1,119 @@
+{
+  "insightIntents": [
+    {
+      "intentName": "OpenOrbCore",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["打开星核", "打开卫星", "星核控制台", "打开喂星"],
+      "result": {
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "intentName": "TakePhoto",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["卫星拍照", "太空拍照", "拍张照片", "从太空拍照", "帮我拍照"],
+      "parameters": {
+        "target_lat": { "type": "number", "required": false, "description": "目标纬度" },
+        "target_lng": { "type": "number", "required": false, "description": "目标经度" },
+        "location_name": { "type": "string", "required": false, "description": "地名，如北京、上海" }
+      },
+      "result": {
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "intentName": "ReflectSunlight",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["反射阳光", "照亮", "发射光束", "太阳光反射"],
+      "parameters": {
+        "intensity": { "type": "number", "required": false, "description": "反射强度 0-1" },
+        "target_lat": { "type": "number", "required": false, "description": "目标纬度" },
+        "target_lng": { "type": "number", "required": false, "description": "目标经度" }
+      },
+      "result": {
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "intentName": "CheckStatus",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["卫星状态", "卫星在哪", "电量多少", "飞到哪了"],
+      "result": {
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "intentName": "SetAttitude",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["调整姿态", "卫星转向", "转一下", "偏航", "俯仰", "对准太阳"],
+      "parameters": {
+        "pitch": { "type": "number", "required": false, "description": "俯仰角 -180~180" },
+        "roll": { "type": "number", "required": false, "description": "横滚角 -180~180" },
+        "yaw": { "type": "number", "required": false, "description": "偏航角 0~360" },
+        "target": { "type": "string", "required": false, "description": "目标方向：sun/nadir" }
+      },
+      "result": {
+        "message": { "type": "string" }
+      }
+    },
+    {
+      "intentName": "NavigatePage",
+      "domain": "universalLink.open",
+      "intentVersion": "1.0.0",
+      "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+      "uiAbility": {
+        "ability": "EntryAbility",
+        "executeMode": [
+          "uiAbilityForeground"
+        ]
+      },
+      "keywords": ["打开控制台", "打开第一视角", "打开卫星追踪", "打开能源系统", "看看卫星追踪"],
+      "parameters": {
+        "page": { "type": "string", "required": true, "description": "页面：dashboard/pov/tracker/control/peak" }
+      },
+      "result": {
+        "message": { "type": "string" }
+      }
+    }
+  ]
+}

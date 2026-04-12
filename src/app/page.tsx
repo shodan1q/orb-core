@@ -104,30 +104,51 @@ export default function Home() {
   // Open a WebSocket uplink to the HarmonyOS orbcore-app ground station.
   // Attitude messages drive satellite rotation (see Satellite.tsx); commands
   // trigger the same UI affordances as the on-screen control panel.
+  const addMessage = useOrbStore((s) => s.addMessage);
+
   useRemoteLink({
     onCommand: (action, msg) => {
+      console.log('[MCP Command]', action, msg);
       if (action === 'take_photo') {
+        addMessage({ role: 'system', content: '[MCP] 收到拍照指令' });
         setShowPhotoViewer(true);
         setPhase('photo-sequence');
         consumeEnergy(50);
         setTimeout(() => setPhase('orbiting'), 8000);
       } else if (action === 'reflect') {
-        // reflection is already handled in useRemoteLink hook
+        addMessage({ role: 'system', content: '[MCP] 收到反射阳光指令' });
       } else if (action === 'status') {
+        addMessage({ role: 'system', content: '[MCP] 收到状态查询指令' });
         setShowControlPanel(true);
-      } else if (action === 'navigate' && msg?.page) {
+      } else if (action === 'point_to_sun') {
+        addMessage({ role: 'system', content: '[MCP] 卫星正在对准太阳方向' });
+        setPhase('satellite-closeup');
+        setTimeout(() => setPhase('orbiting'), 5000);
+      } else if (action === 'navigate') {
+        const page = (msg as Record<string, unknown>)?.page as string;
+        if (!page) return;
         const pageRoutes: Record<string, string> = {
           dashboard: '/',
           pov: '/pov',
           tracker: '/tracker',
-          control: '/', // opens control panel on dashboard
+          control: '/',
           peak: '/peak',
         };
-        const route = pageRoutes[msg.page];
-        if (msg.page === 'control') {
+        const pageNames: Record<string, string> = {
+          dashboard: '主控台',
+          pov: '卫星第一视角',
+          tracker: '卫星追踪',
+          control: '卫星控制台',
+          peak: '地空能源',
+        };
+        addMessage({ role: 'system', content: `[MCP] 导航到${pageNames[page] || page}` });
+        if (page === 'control') {
           setShowControlPanel(true);
-        } else if (route) {
-          router.push(route);
+        } else {
+          const route = pageRoutes[page];
+          if (route && route !== '/') {
+            router.push(route);
+          }
         }
       }
     },

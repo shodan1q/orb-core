@@ -79,6 +79,18 @@
             "resource": "$profile:backup_config"
           }
         ],
+      },
+      {
+        "name": "OrbCoreIntentExecutor",
+        "srcEntry": "./ets/intents/OrbCoreIntentExecutor.ets",
+        "type": "insightIntent",
+        "exported": true,
+        "metadata": [
+          {
+            "name": "ohos.extension.insightIntent",
+            "resource": "$profile:insight_intent"
+          }
+        ]
       }
     ]
   }
