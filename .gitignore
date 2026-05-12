@@ -57,3 +57,6 @@ wei!xing/package-lock.json
 wei!xing/.DS_Store
 wei!xing/.vscode/
 *.stl
+
+# orb.sh runtime: PID / 日志
+scripts/.run/

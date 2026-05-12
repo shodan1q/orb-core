@@ -1,294 +1,51 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont,
-    'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    ui-sans-serif, system-ui, sans-serif;
-  --color-orb-ink: #f5f5f7;
-  --color-orb-bg: #000;
-  --color-orb-surface: #0a0a0a;
-  --color-orb-mute: #86868b;
-  --color-orb-accent: #ffb47a;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-console-bg: #0a0a0c;
+  --color-console-card: #0d0d10;
+  --color-console-accent: #ff4d33;
+  --color-console-accent-dim: rgba(255, 77, 51, 0.15);
 }
 
 @layer base {
   html {
     @apply antialiased;
-    scroll-behavior: smooth;
-    font-feature-settings: 'ss01', 'ss02', 'cv11';
   }
   body {
-    @apply m-0 min-h-svh;
+    @apply m-0 min-h-svh bg-[#0a0a0c] text-zinc-300;
     font-family: var(--font-sans);
-    background: #000;
-    color: #f5f5f7;
-    -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.003em;
   }
   #root {
     @apply min-h-svh w-full max-w-none;
   }
-  ::selection {
-    background: rgba(255, 180, 122, 0.35);
-    color: #fff;
-  }
 }
 
-/** Apple-style typography utilities */
-.headline-1 {
-  font-size: clamp(2.6rem, 6.4vw, 5.6rem);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: -0.025em;
-}
-.headline-2 {
-  font-size: clamp(2rem, 4.8vw, 3.6rem);
-  font-weight: 600;
-  line-height: 1.07;
-  letter-spacing: -0.022em;
-}
-.eyebrow {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: #ffb47a;
-}
-.body-lg {
-  font-size: clamp(15px, 1.4vw, 19px);
-  line-height: 1.55;
-  color: #a1a1a6;
-  letter-spacing: -0.005em;
-}
-.body-sm {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #86868b;
-}
-
-/** Apple-style buttons */
-.btn-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 11px 22px;
-  border-radius: 9999px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-.btn-pill-primary {
-  background: #f5f5f7;
-  color: #000;
-}
-.btn-pill-primary:hover {
-  background: #fff;
-  transform: translateY(-1px);
-}
-.btn-pill-ghost {
-  color: #f5f5f7;
-}
-.btn-pill-ghost:hover {
-  color: #ffb47a;
-}
-.btn-pill-ghost::after {
-  content: '›';
-  margin-left: 2px;
-  transition: transform 0.2s ease;
-}
-.btn-pill-ghost:hover::after {
-  transform: translateX(3px);
-}
-
-/* ============== 关键动画 keyframes ============== */
-
-/** 卫星悬停：缓慢上下漂浮 */
-@keyframes mag-orb-float {
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-/** 悬停 + 微微回弹 */
-@keyframes mag-orb-float-soft {
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -6px, 0);
-  }
-}
-
-/** 卫星缓慢自转（伪 3D，靠太阳翼相对位移暗示） */
-@keyframes mag-orb-yaw {
-  0% { transform: rotate(-2deg); }
-  50% { transform: rotate(2deg); }
-  100% { transform: rotate(-2deg); }
-}
-
-/** 底座阴影呼吸 */
-@keyframes shadow-breathe {
-  0%, 100% { opacity: 0.55; transform: scaleX(1); }
-  50% { opacity: 0.35; transform: scaleX(0.86); }
-}
-
-/** 磁场弧线脉冲 */
-@keyframes field-pulse {
-  0% {
-    stroke-dashoffset: 0;
-    opacity: 0.15;
-  }
-  40% {
-    opacity: 0.85;
-  }
-  100% {
-    stroke-dashoffset: -36;
-    opacity: 0.0;
-  }
-}
-
-/** LED 光环逐点点亮 */
-@keyframes led-pulse {
-  0%, 100% { opacity: 0.18; }
-  50% { opacity: 1; }
-}
-
-/** 顶部天线红灯 */
-@keyframes antenna-blink {
-  0%, 70%, 100% { opacity: 0.3; }
-  78%, 92% { opacity: 1; }
-}
-
-/** 反作用飞轮高速旋转（图标用） */
-@keyframes flywheel-spin {
-  to { transform: rotate(360deg); }
-}
-
-/** 信号波纹 */
-@keyframes signal-ripple {
-  0% { transform: scale(0.6); opacity: 0.85; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-
-/** 太阳翼镜面流光 */
-@keyframes panel-shimmer {
-  0% { transform: translateX(-120%); }
-  100% { transform: translateX(120%); }
-}
-
-/** 横向滚动 marquee */
-@keyframes marquee-x {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/** 入场上滑（保持 opacity 1，只做位移避免在禁用动画环境里"消失"） */
-@keyframes rise-in {
-  from { transform: translateY(14px); }
-  to { transform: translateY(0); }
-}
-
-/** 入场淡入（用于装饰元素，初始不透明度 0.4 而非 0） */
-@keyframes fade-in {
-  from { opacity: 0.4; }
-  to { opacity: 1; }
-}
-
-/** 悬浮气隙的虚线下行 */
-@keyframes gap-shimmer {
-  0% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -16; }
-}
-
-/** 数字滚动入场（保持可见） */
-@keyframes count-in {
-  from { transform: translateY(6px); }
-  to { transform: translateY(0); }
-}
-
-/* ============== 工具类 ============== */
-.anim-float { animation: mag-orb-float 6s ease-in-out infinite; }
-.anim-float-soft { animation: mag-orb-float-soft 7s ease-in-out infinite; }
-.anim-yaw { animation: mag-orb-yaw 9s ease-in-out infinite; }
-.anim-shadow-breathe {
-  animation: shadow-breathe 6s ease-in-out infinite;
-  transform-origin: center;
-}
-.anim-flywheel-spin {
-  animation: flywheel-spin 1.4s linear infinite;
-  transform-origin: center;
-}
-.anim-rise-in {
-  animation: rise-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-.anim-fade-in {
-  animation: fade-in 1.2s ease-out both;
-}
-.anim-gap-shimmer {
-  animation: gap-shimmer 1.6s linear infinite;
-}
-.anim-marquee {
-  animation: marquee-x 36s linear infinite;
-}
-
-/* delay helpers */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
-.delay-700 { animation-delay: 0.7s; }
-.delay-800 { animation-delay: 0.8s; }
-
-/* ============== 极简 Apple-style range slider ============== */
-.apple-slider::-webkit-slider-thumb {
+/* 通用爆炸滑块 */
+input[type='range'].explode-slider {
+  -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  height: 4px;
+  background: #27272a;
   border-radius: 9999px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 4px rgba(255, 180, 122, 0.18);
+  outline: none;
+}
+input[type='range'].explode-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #ff4d33;
+  border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 0 3px rgba(255, 77, 51, 0.18);
 }
-.apple-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.08);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 6px rgba(255, 180, 122, 0.28);
-}
-.apple-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border: 0;
-  border-radius: 9999px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+input[type='range'].explode-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #ff4d33;
+  border-radius: 50%;
+  border: none;
   cursor: pointer;
-}
-
-/* ============== 噪点纹理（增加质感） ============== */
-.noise-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.04;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .anim-float,
-  .anim-float-soft,
-  .anim-yaw,
-  .anim-shadow-breathe,
-  .anim-flywheel-spin,
-  .anim-gap-shimmer,
-  .anim-marquee {
-    animation: none !important;
-  }
+  box-shadow: 0 0 0 3px rgba(255, 77, 51, 0.18);
 }
