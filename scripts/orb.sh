@@ -20,7 +20,7 @@ mkdir -p "$RUN_DIR"
 PROJECTS=(
   "mag-orb|mag-orb|7788|npx --yes serve dist -l tcp://0.0.0.0:7788 --no-clipboard --no-port-switching"
   "weixing|weixing|7789|npx --yes serve dist -l tcp://0.0.0.0:7789 --no-clipboard --no-port-switching"
-  "orbcore|.|7790|npx next dev -p 7790 -H 0.0.0.0"
+  "orbcore|.|7790|npx next start -p 7790 -H 0.0.0.0"
 )
 
 # --- 颜色 ---------------------------------------------------------------
@@ -96,12 +96,8 @@ do_deploy_one() {
   else
     log "  node_modules 已存在，跳过 npm install（如需重装请手动删除）"
   fi
-  # orbcore 用 dev 模式启动，无需预构建，跳过 build 步骤避免 Turbopack 死锁
-  if [[ "$name" == "orbcore" ]]; then
-    log "  orbcore 使用 next dev 模式，跳过 build"
-  else
-    npm run build
-  fi
+  # 三个项目都跑 build：mag-orb/weixing 用 vite，orbcore 用 next 15.5.x（webpack 不死锁）
+  npm run build
   popd >/dev/null
   ok "deploy ${name} 完成"
 }
