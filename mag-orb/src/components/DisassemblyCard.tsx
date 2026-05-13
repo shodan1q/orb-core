@@ -74,8 +74,8 @@ export function DisassemblyCard({
           <Canvas
             shadows
             camera={{ position: [2.8, 1.4, 3.4], fov: 34 }}
-            dpr={[1, 2]}
-            gl={{ antialias: true, alpha: true }}
+            dpr={[1, 1.5]}
+            gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           >
             <color attach="background" args={['#000000']} />
             <ambientLight intensity={0.4} />

@@ -57,6 +57,8 @@ wei!xing/package-lock.json
 wei!xing/.DS_Store
 wei!xing/.vscode/
 *.stl
+# 例外：weixing 运行时需要的 STL 模型必须随仓库部署
+!weixing/public/satellite-model.stl
 
 # orb.sh runtime: PID / 日志
 scripts/.run/

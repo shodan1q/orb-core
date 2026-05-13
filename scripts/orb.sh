@@ -18,8 +18,8 @@ mkdir -p "$RUN_DIR"
 #     @tailwindcss/postcss v4 在 `next build` 阶段存在 PostCSS worker IPC
 #     死锁，主进程与 worker 互等永不推进。dev 模式不走 build 路径，可绕开。
 PROJECTS=(
-  "mag-orb|mag-orb|7788|npx vite preview --port 7788 --host 0.0.0.0 --strictPort"
-  "weixing|weixing|7789|npx vite preview --port 7789 --host 0.0.0.0 --strictPort"
+  "mag-orb|mag-orb|7788|npx --yes serve dist -l tcp://0.0.0.0:7788 --no-clipboard --no-port-switching"
+  "weixing|weixing|7789|npx --yes serve dist -l tcp://0.0.0.0:7789 --no-clipboard --no-port-switching"
   "orbcore|.|7790|npx next dev -p 7790 -H 0.0.0.0"
 )
 

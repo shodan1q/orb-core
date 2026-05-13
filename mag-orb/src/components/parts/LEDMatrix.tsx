@@ -27,13 +27,16 @@ export function LEDMatrix({ selected, hovered, onPointerOver, onPointerOut, onCl
     return arr
   }, [])
 
-  // 每颗 LED 的材质引用，便于 useFrame 直接写 emissiveIntensity
+  // 每颗 LED 的材质引用
   const matsRef = useRef<(THREE.MeshStandardMaterial | null)[]>([])
+  // 节流到 ~30 Hz：144 LED × 60 = 8640 写/秒太重，降一半视觉无差
+  const lastUpdate = useRef(0)
 
-  // 通过 window-level 信号读 powered 状态（避免 prop 穿透 PartMesh 接口）
-  // 默认通电；MagOrbConsole 会通过 useLayoutEffect 写入 window.__magOrbPowered
   useFrame((state) => {
     const t = state.clock.getElapsedTime()
+    if (t - lastUpdate.current < 0.033) return
+    lastUpdate.current = t
+
     const powered = (window as unknown as { __magOrbPowered?: boolean }).__magOrbPowered !== false
     LEDS.forEach((led, i) => {
       const mat = matsRef.current[i]
