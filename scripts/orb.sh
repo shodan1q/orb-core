@@ -49,8 +49,41 @@ is_running() {
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
 
+IS_LINUX=0
+[[ "$(uname -s)" == "Linux" ]] && IS_LINUX=1
+
 port_pid() {
-  lsof -nP -iTCP:"$1" -sTCP:LISTEN -t 2>/dev/null | head -n1
+  local port="$1"
+  # 1) lsof：跨平台、不限 LISTEN 状态（catch CLOSE_WAIT/FIN_WAIT 等）
+  local pid
+  pid="$(lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u | head -n1)"
+  if [[ -n "$pid" ]]; then
+    echo "$pid"
+    return
+  fi
+  # 2) Linux fuser 兜底（macOS fuser 参数不同，跳过）
+  if [[ "$IS_LINUX" -eq 1 ]] && command -v fuser >/dev/null 2>&1; then
+    local out
+    out="$(fuser -n tcp "$port" 2>/dev/null || true)"
+    # fuser 输出形如 " 12345 67890"，取首个数字
+    echo "$out" | tr -s ' \t' '\n' | grep -E '^[0-9]+$' | head -n1
+  fi
+}
+
+# 端口强制释放：lsof + kill_tree（+ Linux fuser -k 加成）
+force_free_port() {
+  local port="$1"
+  if [[ "$IS_LINUX" -eq 1 ]] && command -v fuser >/dev/null 2>&1; then
+    fuser -k -KILL -n tcp "$port" >/dev/null 2>&1 || true
+  fi
+  local pids
+  pids="$(lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u)"
+  if [[ -n "$pids" ]]; then
+    echo "$pids" | xargs -r kill -KILL 2>/dev/null || true
+    for p in $pids; do
+      kill_tree "$p"
+    done
+  fi
 }
 
 # 递归杀整棵进程树（含子孙）。next dev / npx 会派生多层 worker，
@@ -116,8 +149,14 @@ do_start_one() {
   local occupant
   occupant="$(port_pid "$port" || true)"
   if [[ -n "$occupant" ]]; then
-    err "端口 ${port} 已被 pid=${occupant} 占用，无法启动 ${name}"
-    return 1
+    warn "${name} 启动前端口 ${port} 被 pid=${occupant} 占用，强制释放"
+    force_free_port "$port"
+    sleep 2
+    occupant="$(port_pid "$port" || true)"
+    if [[ -n "$occupant" ]]; then
+      err "端口 ${port} 仍被 pid=${occupant} 占用（强制释放无效），放弃启动 ${name}"
+      return 1
+    fi
   fi
 
   log "start ${name} → :${port}"
@@ -179,7 +218,7 @@ do_stop_one() {
     log "${name} 未在 PID 记录中运行"
   fi
 
-  # 兜底：循环清理端口直到真正释放（最多 5 轮，每轮递归杀树）
+  # 兜底：循环清理端口直到真正释放（最多 5 轮，每轮 force_free_port + kill_tree）
   local round=0
   while true; do
     local occupant
@@ -190,8 +229,8 @@ do_stop_one() {
       err "端口 ${port} 5 轮后仍被 pid=${occupant} 占用，放弃"
       break
     fi
-    warn "端口 ${port} 仍被 pid=${occupant} 占用，递归清理 (第 ${round} 轮)"
-    kill_tree "$occupant"
+    warn "端口 ${port} 仍被 pid=${occupant} 占用，强制释放 (第 ${round} 轮)"
+    force_free_port "$port"
     sleep 1
   done
 }
