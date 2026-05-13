@@ -18,12 +18,22 @@ export function PartsListCard({ selected, hovered, onSelect, onHover }: Props) {
             Bill of Materials
           </h2>
           <p className="mt-1 text-sm font-medium text-zinc-200">
-            零件清单 · 07/07 分系统
+            零件清单 · 09 分系统
           </p>
         </div>
-        <span className="rounded-full bg-zinc-800/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300">
-          点击高亮
-        </span>
+        {selected ? (
+          <button
+            type="button"
+            onClick={() => onSelect(null)}
+            className="rounded-full border border-zinc-700/80 px-3 py-1 text-[11px] text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+          >
+            清空选择 ×
+          </button>
+        ) : (
+          <span className="rounded-full bg-zinc-800/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300">
+            点击高亮
+          </span>
+        )}
       </header>
 
       <div className="relative z-10 min-h-0 flex-1 overflow-hidden px-3 pb-3">

@@ -33,6 +33,37 @@ function useOledTexture() {
       return
     }
 
+    // 检查 IR 触发：触发后 2 秒内画 ASCII 卫星欢迎画面
+    const irTs = (window as unknown as { __magOrbIrTrigger?: number }).__magOrbIrTrigger ?? 0
+    const sinceIr = (Date.now() - irTs) / 1000
+    if (irTs > 0 && sinceIr < 2) {
+      // WAKE 画面
+      ctx.fillStyle = '#ff8c1a'
+      ctx.font = 'bold 14px ui-monospace, Menlo, monospace'
+      ctx.fillText('IR · WAKE', 8, 18)
+      // 闪烁感叹号
+      if (Math.floor(tickRef.current * 4) % 2 === 0) {
+        ctx.fillStyle = '#ff8c1a'
+        ctx.fillRect(232, 8, 12, 12)
+        ctx.fillStyle = '#000'
+        ctx.font = 'bold 11px ui-monospace, Menlo, monospace'
+        ctx.fillText('!', 237, 17)
+      }
+      // ASCII 卫星
+      ctx.fillStyle = '#00d4ff'
+      ctx.font = 'bold 14px ui-monospace, Menlo, monospace'
+      const lines = [
+        '   _-=-_',
+        '  /     \\',
+        '-=|  o  |=-',
+        '  \\_____/',
+        '    |||',
+      ]
+      lines.forEach((line, i) => ctx.fillText(line, 60, 42 + i * 16))
+      texture.needsUpdate = true
+      return
+    }
+
     ctx.fillStyle = '#00d4ff'
     ctx.font = 'bold 14px ui-monospace, Menlo, monospace'
     ctx.fillText('MAG-ORB', 8, 18)

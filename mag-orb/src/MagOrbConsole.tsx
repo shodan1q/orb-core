@@ -37,6 +37,45 @@ export function MagOrbConsole() {
     ;(window as unknown as { __magOrbPowered?: boolean }).__magOrbPowered = powered
   }, [powered])
 
+  // 键盘快捷键：P/R/E/Q/1/2/3
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.isContentEditable
+      )
+        return
+      switch (e.key.toLowerCase()) {
+        case 'p':
+          setPowered((v) => !v)
+          break
+        case '1':
+          setTab('overview')
+          break
+        case '2':
+          setTab('signal')
+          break
+        case '3':
+          setTab('settings')
+          break
+        case 'e':
+          setExplode((v) => Math.min(1, Math.round((v + 0.1) * 10) / 10))
+          break
+        case 'q':
+          setExplode((v) => Math.max(0, Math.round((v - 0.1) * 10) / 10))
+          break
+        case 'r':
+          // R 用于复位拆解（视图复位在 DisassemblyCard 内部按钮）
+          setExplode(0)
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   // powered 关时，把 flags.powered 同步关掉
   const effectiveFlags: AnimationFlags = { ...flags, powered }
 

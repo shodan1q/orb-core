@@ -10,6 +10,13 @@ type Props = {
   onExplode: (v: number) => void
 }
 
+const DEFAULT_FLAGS: AnimationFlags = {
+  powered: true,
+  bodyRotate: true,
+  dishScan: true,
+  dishScanSpeed: 1,
+}
+
 function ToggleRow({
   label,
   sub,
@@ -217,9 +224,26 @@ export function SettingsCard({ powered, flags, explode, onPower, onFlags, onExpl
         </div>
       </div>
 
-      <p className="relative z-10 px-5 py-3 text-center text-[10px] text-zinc-600 md:px-6">
-        所有变更实时生效 · 关电时动画冻结并保持当前位置
-      </p>
+      {/* 恢复默认 + 快捷键提示 */}
+      <div className="relative z-10 flex flex-col items-center gap-2 border-t border-zinc-800/60 px-5 py-4 md:px-6">
+        <button
+          type="button"
+          onClick={() => {
+            onFlags(DEFAULT_FLAGS)
+            onPower(true)
+            onExplode(0)
+          }}
+          className="rounded-full border border-zinc-700/80 px-4 py-1.5 text-[11px] text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+        >
+          ↺ 恢复默认
+        </button>
+        <p className="text-center text-[10px] text-zinc-600">
+          快捷键: <span className="text-zinc-400">P</span> 电源 ·{' '}
+          <span className="text-zinc-400">1 / 2 / 3</span> 切 tab ·{' '}
+          <span className="text-zinc-400">E / Q</span> 拆解 ± ·{' '}
+          <span className="text-zinc-400">R</span> 复位
+        </p>
+      </div>
     </section>
   )
 }

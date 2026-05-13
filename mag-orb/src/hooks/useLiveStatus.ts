@@ -45,8 +45,12 @@ export function useLiveStatus(powered: boolean): LiveSnapshot {
         const newSoc = clamp(Number((cur.batterySoc + socDelta).toFixed(1)), 60, 100)
         // 链路偶尔同步
         const newLink: LiveSnapshot['link'] = Math.random() < 0.02 ? '同步中' : '在线'
-        // IR 偶尔被触发
-        const newIr: LiveSnapshot['irState'] = Math.random() < 0.05 ? '触发' : '待机'
+        // IR 偶尔被触发：同步设全局标志给 OLED 画 ASCII 卫星动画用
+        const triggered = Math.random() < 0.05
+        const newIr: LiveSnapshot['irState'] = triggered ? '触发' : '待机'
+        if (triggered) {
+          ;(window as unknown as { __magOrbIrTrigger?: number }).__magOrbIrTrigger = Date.now()
+        }
         // OLED fps 在 30 附近 ±2 抖动
         const newFps = clamp(Math.round(30 + jitter(2)), 28, 32)
         return {
