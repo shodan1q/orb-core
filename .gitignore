@@ -48,6 +48,8 @@ AGENTS.md
 
 # local media assets (too large for git, keep out of the monorepo)
 *.mp4
+# 例外：weixing 太空相机 tab 用的素材必须随仓库部署
+!weixing/public/Movie.mp4
 
 # wei!xing sub-project: ignore build artifacts, deps, and large files
 wei!xing/node_modules/
