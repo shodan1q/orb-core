@@ -43,7 +43,7 @@ export const PARTS: PartSpec[] = [
     sub: 'LI-PO CELL',
     blurb: '3.7V · 1200mAh · 感应充电',
     detail:
-      '体内储能单元。底座感应线圈耦合到本体接收线圈后整流稳压，给电池补能；运行电流约 80mA，满电支持约 14h。',
+      '体内储能单元。底座感应线圈耦合到本体接收线圈后整流稳压，给电池补能；运行电流约 80mA，满电支持约 6h。',
     accent: '#7cff5f',
     origin: [-0.32, 0.28, 0.0],
     explodeOffset: [-1.6, -0.1, -0.2],

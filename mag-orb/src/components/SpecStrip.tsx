@@ -40,9 +40,9 @@ const SPECS: SpecItem[] = [
   },
   {
     title: '续航',
-    value: '14 h',
+    value: '6 h',
     tag: '满电 · @ 80 mA',
-    detail: '锂聚 3.7V 1200 mAh，悬浮启动到下电典型续航约 14 小时。',
+    detail: '锂聚 3.7V 1200 mAh，悬浮启动到下电典型续航约 6 小时。',
   },
 ]
 
@@ -55,7 +55,7 @@ export function SpecStrip() {
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             Key Specs
           </h2>
-          <p className="mt-1 text-sm font-medium text-zinc-200">关键参数 · 六项硬指标</p>
+          <p className="mt-1 text-sm font-medium text-zinc-200">关键参数</p>
         </div>
         <p className="text-[10px] uppercase tracking-wider text-zinc-500">DESKTOP SAT · R-007</p>
       </header>
