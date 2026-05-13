@@ -109,6 +109,18 @@ do_start_one() {
   sleep 1
   if is_running "$name"; then
     ok "${name} 启动成功 (pid=$(cat "$pid_f"))  日志: $log_f"
+    # 预热：等端口可访问后做一次 curl，让 next dev / vite preview 提前完成首次编译
+    # 这样真实用户首次访问时不会看到长时间黑屏
+    (
+      for _ in $(seq 1 30); do
+        if curl -sf --max-time 2 -o /dev/null "http://127.0.0.1:${port}/"; then
+          # 关键：第一次 curl 通常会触发编译；再 curl 一次保证编译产物已 ready
+          curl -sf --max-time 60 -o /dev/null "http://127.0.0.1:${port}/" || true
+          break
+        fi
+        sleep 1
+      done
+    ) >/dev/null 2>&1 &
   else
     err "${name} 启动失败，查看日志: $log_f"
     rm -f "$pid_f"
