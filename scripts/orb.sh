@@ -52,37 +52,58 @@ is_running() {
 IS_LINUX=0
 [[ "$(uname -s)" == "Linux" ]] && IS_LINUX=1
 
-port_pid() {
-  local port="$1"
-  # 1) lsof：跨平台、不限 LISTEN 状态（catch CLOSE_WAIT/FIN_WAIT 等）
-  local pid
-  pid="$(lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u | head -n1)"
-  if [[ -n "$pid" ]]; then
-    echo "$pid"
-    return
-  fi
-  # 2) Linux fuser 兜底（macOS fuser 参数不同，跳过）
-  if [[ "$IS_LINUX" -eq 1 ]] && command -v fuser >/dev/null 2>&1; then
-    local out
-    out="$(fuser -n tcp "$port" 2>/dev/null || true)"
-    # fuser 输出形如 " 12345 67890"，取首个数字
-    echo "$out" | tr -s ' \t' '\n' | grep -E '^[0-9]+$' | head -n1
+# 给所有进程查询/杀进程的命令加 timeout，避免在 lsof/fuser 慢的机器上卡死
+TO() {
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$@"
+  else
+    shift  # 没有 timeout 命令就直接跑
+    "$@"
   fi
 }
 
-# 端口强制释放：lsof + kill_tree（+ Linux fuser -k 加成）
+# 用 ss 在 Linux 上快速找占用端口的 PID（不读 /proc，走 netlink）
+ss_port_pids() {
+  local port="$1"
+  ss -tnpH "( sport = :$port or dport = :$port )" 2>/dev/null \
+    | grep -oE 'pid=[0-9]+' | cut -d= -f2 | sort -u
+}
+
+port_pid() {
+  local port="$1"
+  local pid=""
+  # 1) Linux 优先 ss（最快、kernel netlink）
+  if [[ "$IS_LINUX" -eq 1 ]] && command -v ss >/dev/null 2>&1; then
+    pid="$(ss_port_pids "$port" | head -n1 || true)"
+    [[ -n "$pid" ]] && echo "$pid" && return
+  fi
+  # 2) lsof 跨平台兜底，带 3 秒超时
+  pid="$(TO 3 lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u | head -n1 || true)"
+  echo "$pid"
+}
+
+# 端口强制释放：直接对所有占用进程发 SIGKILL，全部带 timeout 兜底
 force_free_port() {
   local port="$1"
-  if [[ "$IS_LINUX" -eq 1 ]] && command -v fuser >/dev/null 2>&1; then
-    fuser -k -KILL -n tcp "$port" >/dev/null 2>&1 || true
+  local pids=""
+
+  # Linux: 用 ss 找所有占用进程，然后 kill 一次性收割
+  if [[ "$IS_LINUX" -eq 1 ]] && command -v ss >/dev/null 2>&1; then
+    pids="$(ss_port_pids "$port")"
+    if [[ -n "$pids" ]]; then
+      echo "$pids" | xargs -r -n1 -P4 -I{} bash -c 'kill -KILL {} 2>/dev/null || true'
+    fi
   fi
-  local pids
-  pids="$(lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u)"
+
+  # fuser 兜底（带 3 秒 timeout，慢机器上不会卡）
+  if [[ "$IS_LINUX" -eq 1 ]] && command -v fuser >/dev/null 2>&1; then
+    TO 3 fuser -k -KILL -n tcp "$port" >/dev/null 2>&1 || true
+  fi
+
+  # 最后 lsof 再扫一遍（带 3 秒 timeout）
+  pids="$(TO 3 lsof -nP -iTCP:"$port" -t 2>/dev/null | sort -u || true)"
   if [[ -n "$pids" ]]; then
     echo "$pids" | xargs -r kill -KILL 2>/dev/null || true
-    for p in $pids; do
-      kill_tree "$p"
-    done
   fi
 }
 
