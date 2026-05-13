@@ -53,6 +53,31 @@ port_pid() {
   lsof -nP -iTCP:"$1" -sTCP:LISTEN -t 2>/dev/null | head -n1
 }
 
+# 递归杀整棵进程树（含子孙）。next dev / npx 会派生多层 worker，
+# 仅 SIGKILL 父进程不够 —— 必须遍历子树才能释放端口。
+kill_tree() {
+  local pid="$1"
+  [[ -z "$pid" ]] && return
+  local c
+  for c in $(pgrep -P "$pid" 2>/dev/null || true); do
+    kill_tree "$c"
+  done
+  kill -KILL "$pid" 2>/dev/null || true
+}
+
+# 阻塞等端口真正释放（最多 N 秒）
+wait_port_free() {
+  local port="$1" timeout="${2:-8}" i=0
+  while [[ -n "$(port_pid "$port" || true)" ]]; do
+    i=$((i + 1))
+    if [[ "$i" -gt "$timeout" ]]; then
+      return 1
+    fi
+    sleep 1
+  done
+  return 0
+}
+
 for_each() {
   local cb="$1"
   for entry in "${PROJECTS[@]}"; do
@@ -106,7 +131,7 @@ do_start_one() {
     nohup bash -c "exec $cmd" >"$log_f" 2>&1 &
     echo $! >"$pid_f"
   )
-  sleep 1
+  sleep 2
   if is_running "$name"; then
     ok "${name} 启动成功 (pid=$(cat "$pid_f"))  日志: $log_f"
     # 预热：等端口可访问后做两轮 curl，让 next dev / vite preview 提前完成首次编译
@@ -140,15 +165,16 @@ do_stop_one() {
 
   if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
     log "stop ${name} (pid=${pid})"
-    # 杀掉整个进程组（npm/next/vite 会派生子进程）
+    # 优先 SIGTERM 整个进程组，给优雅退出机会
     kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
     for _ in 1 2 3 4 5; do
       kill -0 "$pid" 2>/dev/null || break
       sleep 1
     done
+    # 还活着 → 递归 SIGKILL 整棵进程树（含 npm/npx/node 派生的所有子孙）
     if kill -0 "$pid" 2>/dev/null; then
-      warn "${name} 未响应 SIGTERM，发送 SIGKILL"
-      kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+      warn "${name} 未响应 SIGTERM，递归 SIGKILL 进程树"
+      kill_tree "$pid"
     fi
     rm -f "$pid_f"
     ok "${name} 已停止"
@@ -157,13 +183,21 @@ do_stop_one() {
     log "${name} 未在 PID 记录中运行"
   fi
 
-  # 兜底：仍占用端口的进程一并清理
-  local occupant
-  occupant="$(port_pid "$port" || true)"
-  if [[ -n "$occupant" ]]; then
-    warn "端口 ${port} 仍被 pid=${occupant} 占用，强制清理"
-    kill -KILL "$occupant" 2>/dev/null || true
-  fi
+  # 兜底：循环清理端口直到真正释放（最多 5 轮，每轮递归杀树）
+  local round=0
+  while true; do
+    local occupant
+    occupant="$(port_pid "$port" || true)"
+    [[ -z "$occupant" ]] && break
+    round=$((round + 1))
+    if [[ "$round" -gt 5 ]]; then
+      err "端口 ${port} 5 轮后仍被 pid=${occupant} 占用，放弃"
+      break
+    fi
+    warn "端口 ${port} 仍被 pid=${occupant} 占用，递归清理 (第 ${round} 轮)"
+    kill_tree "$occupant"
+    sleep 1
+  done
 }
 
 do_status_one() {
@@ -207,7 +241,7 @@ case "$cmd" in
   deploy)  for_each do_deploy_one ;;
   start)   for_each do_start_one  ;;
   stop)    for_each do_stop_one   ;;
-  restart) for_each do_stop_one; for_each do_start_one ;;
+  restart) for_each do_stop_one; sleep 2; for_each do_start_one ;;
   status)
     echo "项目状态:"
     for_each do_status_one
