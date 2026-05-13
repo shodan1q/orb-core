@@ -112,7 +112,7 @@ export function SettingsCard({ powered, flags, explode, onPower, onFlags, onExpl
             Console Settings
           </h2>
           <p className="mt-1 text-sm font-medium text-zinc-200">
-            控制台设置 · 动画 · 电源 · 演示参数
+            控制台设置 · 动画 · 电源 · 拆解
           </p>
         </div>
         <span

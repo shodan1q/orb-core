@@ -55,11 +55,9 @@ export function SpecStrip() {
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             Key Specs
           </h2>
-          <p className="mt-1 text-sm font-medium text-zinc-200">
-            关键参数 · 桌面级展示 · 非量产
-          </p>
+          <p className="mt-1 text-sm font-medium text-zinc-200">关键参数 · 六项硬指标</p>
         </div>
-        <p className="text-[10px] uppercase tracking-wider text-zinc-500">DEMO DATA</p>
+        <p className="text-[10px] uppercase tracking-wider text-zinc-500">DESKTOP SAT · R-007</p>
       </header>
 
       <div className="relative z-10 grid grid-cols-2 gap-px bg-zinc-800/40 sm:grid-cols-3 lg:grid-cols-6">

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import logoSubtract from '../Subtract.svg'
-import { DisassemblyCard } from './components/DisassemblyCard'
-import { PartsListCard } from './components/PartsListCard'
-import { StatusCard } from './components/StatusCard'
+import { OverviewBoard } from './components/OverviewBoard'
 import { SpecStrip } from './components/SpecStrip'
 import { SignalChainCard } from './components/SignalChainCard'
 import { SettingsCard } from './components/SettingsCard'
@@ -161,35 +159,16 @@ export function MagOrbConsole() {
       <main className="mx-auto max-w-[1600px] space-y-5 overflow-visible px-5 pb-10 md:px-8 w-full">
         {tab === 'overview' && (
           <>
-            <div className="relative z-[1] grid min-h-[420px] gap-5 pt-5 md:pt-7 lg:grid-cols-12 lg:grid-rows-1">
-              <div className="lg:col-span-5 lg:min-h-[420px]">
-                <DisassemblyCard
-                  selected={selected}
-                  hovered={hovered}
-                  explode={explode}
-                  onSelect={setSelected}
-                  onHover={setHovered}
-                  onExplode={setExplode}
-                  flags={effectiveFlags}
-                />
-              </div>
-              <div className="lg:col-span-4 lg:min-h-[420px]">
-                <PartsListCard
-                  selected={selected}
-                  hovered={hovered}
-                  onSelect={setSelected}
-                  onHover={setHovered}
-                />
-              </div>
-              <div className="lg:col-span-3 lg:min-h-[420px]">
-                <StatusCard
-                  selected={selected}
-                  hovered={hovered}
-                  onClear={() => setSelected(null)}
-                  powered={powered}
-                />
-              </div>
-            </div>
+            <OverviewBoard
+              selected={selected}
+              hovered={hovered}
+              explode={explode}
+              onSelect={setSelected}
+              onHover={setHovered}
+              onExplode={setExplode}
+              flags={effectiveFlags}
+              powered={powered}
+            />
             <SpecStrip />
           </>
         )}
